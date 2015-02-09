@@ -33,7 +33,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -42,13 +41,13 @@ import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
-import com.google.android.youtube.player.YouTubePlayerView;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
 import com.parse.Parse;
 import com.parse.ParseCrashReporting;
+import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -73,8 +72,10 @@ public class FirstActivity extends ActionBarActivity{
     private int currentimagenumber=1;
     int COUNT_V=0,CURR_COUNT_V=0;
     ArrayList<Integer> notAvailableList_V;
+    int COUNT_VDB=0,CURR_COUNT_VDB=0;
+    ArrayList<Integer> notAvailableList_VDB;
     public static int PID;
-    ProgressDialog dialog,dialog2,dialog3,dialog0;
+    ProgressDialog dialog,dialog2,dialog3,dialog0,dialog4;
     public static String videoID;
     public static String MYURL;
     public static SQLiteDatabase db;
@@ -99,14 +100,15 @@ public class FirstActivity extends ActionBarActivity{
         if(checkConnection()){
             Firebase.setAndroidContext(this);
             ref=new Firebase("https://smartdemo.firebaseio.com/TV01");
-
+            ref.removeValue();
             //Firebase Listener for Change of Tab
             ref.child("tab").addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
                     try {
                         new Thread(new Task_TAB(snapshot.getValue().toString())).start();
-                    } catch (NullPointerException e) {}
+                    } catch (NullPointerException e) {
+                    }
                 }
 
                 @Override
@@ -546,7 +548,7 @@ public class FirstActivity extends ActionBarActivity{
                             videoID=c.getString(0);
                             c.close();
                         }catch(Exception e){videoID="nothing";}
-                        Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, false);
+                        Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
                         getActivity().startActivity(intent2);
 
                     }
@@ -611,7 +613,7 @@ public class FirstActivity extends ActionBarActivity{
 
             if (checkConnection()) {
 
-                dialog0 = ProgressDialog.show(this, null, "0Just a moment...", true);
+                dialog0 = ProgressDialog.show(this, null, "Just a moment...", true);
 
                 //SS
                 final ParseQuery<ParseObject> query1 = ParseQuery.getQuery("Test2Slideshow");
@@ -675,7 +677,7 @@ public class FirstActivity extends ActionBarActivity{
 
         if (notAvailableList_360.size() > 0) {
             if (checkConnection()) {
-                dialog = ProgressDialog.show(this, null, "nJust a moment...", true);
+                dialog = ProgressDialog.show(this, null, "Download 360 View Images...", true);
                 CURR_COUNT_360 = 0;
                 COUNT_360 = notAvailableList_360.size();
                 for (final int k : notAvailableList_360) {
@@ -730,7 +732,7 @@ public class FirstActivity extends ActionBarActivity{
 
         if (notAvailableList_SS.size() > 0) {
             if (checkConnection()) {
-                dialog2 = ProgressDialog.show(this, null, "2Just a moment...", true);
+                dialog2 = ProgressDialog.show(this, null, "Downloading Slideshow Images...", true);
                 CURR_COUNT_SS = 0;
                 COUNT_SS = notAvailableList_SS.size();
                 for (final int k : notAvailableList_SS) {
@@ -770,6 +772,8 @@ public class FirstActivity extends ActionBarActivity{
         }
 
 
+
+
         //VIDEO THUMBNAILS
         notAvailableList_V = new ArrayList<>(NO_V);
         notAvailableList_V.clear();
@@ -781,19 +785,18 @@ public class FirstActivity extends ActionBarActivity{
             }
         }
 
-
-        if (notAvailableList_V.size() > 0) {
+        if (notAvailableList_V.size() > 0){
             if (checkConnection()) {
-                dialog3 = ProgressDialog.show(this, null, "3Just a moment...", true);
+                dialog3 = ProgressDialog.show(this, null, "Downloading Video Thumbnails...", true);
                 CURR_COUNT_V = 0;
-                COUNT_V = notAvailableList_V.size();
+                COUNT_V = NO_V;
+
                 for (final int k : notAvailableList_V) {
                     ParseQuery<ParseObject> query = ParseQuery.getQuery("productvideos");
                     query.whereEqualTo("pid", PID);
                     query.whereEqualTo("position", k);
                     query.findInBackground(new FindCallback<ParseObject>() {
-                        @Override
-                        public void done(List<ParseObject> objects, com.parse.ParseException e) {
+                        public void done(List<ParseObject> objects, ParseException e) {
                             if (e == null) {
                                 String videoUrl = objects.get(0).getString("pvideo_urls");
                                 MYURL = videoUrl;
@@ -807,12 +810,60 @@ public class FirstActivity extends ActionBarActivity{
                             }
                         }
                     });
-
                 }
+
             } else {
                 Toast.makeText(this, "Internet Connection unavailable!", Toast.LENGTH_LONG).show();
             }
         }
+
+
+
+
+        //VIDEO IDS
+        notAvailableList_VDB = new ArrayList<>(NO_V);
+        notAvailableList_VDB.clear();
+        for (int pos = 1; pos <= NO_V; ++pos) {
+            Cursor c = db.rawQuery("SELECT videoid FROM video WHERE pid=" + PID + " AND position=" + pos + ";", null);
+            try{
+                c.moveToFirst();
+                c.getString(0);
+            }catch (Exception e){
+                notAvailableList_VDB.add(pos);
+            }
+        }
+
+
+        if(notAvailableList_VDB.size()>0) {
+            if(checkConnection()) {
+                dialog4 = ProgressDialog.show(this, null, "Downloading Video Details...", true);
+                CURR_COUNT_VDB = 0;
+                COUNT_VDB = notAvailableList_VDB.size();
+
+                for (final int pos : notAvailableList_VDB) {
+                    ParseQuery<ParseObject> query = ParseQuery.getQuery("productvideos");
+                    query.whereEqualTo("pid", PID);
+                    query.whereEqualTo("position", pos);
+                    query.findInBackground(new FindCallback<ParseObject>() {
+                        public void done(List<ParseObject> objects, ParseException e) {
+                            if (e == null) {
+                                String videoUrl = objects.get(0).getString("pvideo_urls");
+                                MYURL = videoUrl;
+                                String[] parts = videoUrl.split("v=");
+                                videoID = parts[1];
+                                db.execSQL("INSERT INTO video VALUES(" + PID + "," + pos + ",'" + MYURL + "','" + videoID + "');");
+                                CURR_COUNT_VDB++;
+                                if (CURR_COUNT_VDB == COUNT_VDB) dialog4.dismiss();
+                            } else {
+                                Log.e("PARSE", "Error: " + e.getMessage());
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+
 
     }
 
