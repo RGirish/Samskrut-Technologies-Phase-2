@@ -1,0 +1,27 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:background="#fff"
+        android:scaleType="center"
+        android:layout_gravity="center"
+        android:id="@+id/imageframe"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:id="@+id/fab"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:layout_gravity="end|bottom"
+        android:tint="#fff"
+        android:onClick="onClickScan"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="7dp"
+        android:background="@drawable/fab_selector"
+        tools:ignore="RtlCompat" />
+
+</FrameLayout>

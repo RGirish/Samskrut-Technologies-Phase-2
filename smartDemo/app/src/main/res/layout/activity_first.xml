@@ -1,0 +1,39 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="150dp"
+            android:src="@drawable/search"
+            android:layout_height="150dp" />
+
+        <TextView
+            android:text="Scan Barcode on the Product"
+            android:layout_width="wrap_content"
+            android:textColor="#006633"
+            android:textStyle="italic"
+            android:layout_marginTop="20dp"
+            android:textSize="20sp"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_marginTop="20dp"
+            android:onClick="onClickScan"
+            android:src="@drawable/selector_scan"
+            android:layout_height="100dp" />
+
+    </LinearLayout>
+
+
+</FrameLayout>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Show Commerce</string>
+
+    <color name="mygreen">#1ab750</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#fff</color>
+    <color name="tab_highlight">#1c57ff</color>
+
+    <string name="title_activity_first">FirstActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_video">VideoActivity</string>
+    <string name="hello_world">Hello world!</string>
+
+</resources>

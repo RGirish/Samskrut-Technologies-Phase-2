@@ -1,0 +1,34 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:id="@+id/videoll"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            android:clickable="false"
+            android:layout_height="wrap_content">
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ImageButton
+        android:id="@+id/fab"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:layout_gravity="end|bottom"
+        android:tint="#fff"
+        android:onClick="onClickScan"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="7dp"
+        android:background="@drawable/fab_selector"
+        tools:ignore="RtlCompat" />
+
+</FrameLayout>
