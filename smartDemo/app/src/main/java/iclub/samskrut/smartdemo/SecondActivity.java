@@ -1,5 +1,6 @@
 package iclub.samskrut.smartdemo;
 
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -38,6 +39,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import com.firebase.client.Firebase;
+import com.google.android.youtube.player.YouTubeInitializationResult;
+import com.google.android.youtube.player.YouTubePlayer;
+import com.google.android.youtube.player.YouTubePlayerSupportFragment;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -397,8 +401,14 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                             videoID=c.getString(0);
                         }catch(Exception e){videoID="nothing";}
                         ref.child("video").child("id").push().setValue(videoID);
-                        Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
-                        getActivity().startActivityForResult(intent2, 101);
+
+                        Intent intent=new Intent(getActivity(),YoutubeActivity.class);
+                        intent.putExtra("videoid",videoID);
+                        Toast.makeText(getActivity(),String.valueOf(videoID),Toast.LENGTH_LONG).show();
+                        startActivity(intent);
+
+                        //Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
+                        //getActivity().startActivityForResult(intent2, 101);
                     }
                 });
                 ll.addView(iv);
@@ -815,5 +825,11 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
             Log.e("WriteFile_SS",e.getMessage());
         }
     }
+
+
+
+
+
+
 
 }
