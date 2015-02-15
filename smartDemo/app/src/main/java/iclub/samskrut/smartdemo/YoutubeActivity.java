@@ -1,119 +1,134 @@
+
 package iclub.samskrut.smartdemo;
+
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.WindowManager;
-import android.widget.Toast;
-import com.google.android.youtube.player.YouTubeBaseActivity;
+import android.os.Environment;
+import android.support.v4.app.FragmentActivity;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
-import com.google.android.youtube.player.YouTubePlayer.ErrorReason;
-import com.google.android.youtube.player.YouTubePlayer.PlaybackEventListener;
-import com.google.android.youtube.player.YouTubePlayer.PlayerStateChangeListener;
-import com.google.android.youtube.player.YouTubePlayer.Provider;
-import com.google.android.youtube.player.YouTubePlayerView;
+import com.google.android.youtube.player.YouTubePlayerSupportFragment;
 
-public class YoutubeActivity extends YouTubeBaseActivity implements YouTubePlayer.OnInitializedListener {
+public class YoutubeActivity extends FragmentActivity {
 
-    public static final String API_KEY = "AIzaSyAHAXqbOC8IiAuKQwGhM4k3pSorZOdYbwE";
-
-    //http://youtu.be/<VIDEO_ID>
-    public static String VIDEO_ID = "dKLftgvYsVU";
+    public static String videoId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        /** attaching layout xml **/
         setContentView(R.layout.youtube_player);
 
         Intent intent = getIntent();
-        VIDEO_ID=intent.getStringExtra("videoid");
+        videoId = intent.getStringExtra("videoid");
+        String pos = intent.getStringExtra("pos");
 
-        /** Initializing YouTube player view **/
-        YouTubePlayerView youTubePlayerView = (YouTubePlayerView) findViewById(R.id.youtube_player);
-        youTubePlayerView.initialize(API_KEY, this);
+        if (!Connection.CONNECTED) {
+            PlayerYouTubeFrag myFragment = PlayerYouTubeFrag.newInstance(videoId);
+            getSupportFragmentManager().beginTransaction().replace(R.id.myContainer, myFragment).commit();
+            myFragment.init();
+        } else {
+            LinearLayout ll = new LinearLayout(this);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER;
+            ll.setLayoutParams(params);
+            Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/video/" + Connection.PID + "_" + pos + ".jpg");
+            Drawable d = new BitmapDrawable(getResources(), bitmap);
+            ll.setOrientation(LinearLayout.HORIZONTAL);
+            ll.setBackground(d);
+            ll.setGravity(Gravity.CENTER);
+            FrameLayout fl = (FrameLayout) findViewById(R.id.myContainer);
 
-    }
+            ImageView imageView = new ImageView(this);
+            LinearLayout.LayoutParams params1 = new LinearLayout.LayoutParams(100, 100);
+            imageView.setLayoutParams(params1);
+            imageView.setImageResource(R.drawable.play);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("playing");
+                }
+            });
+            ll.addView(imageView);
 
-    @Override
-    public void onInitializationFailure(Provider provider, YouTubeInitializationResult result) {
-        Toast.makeText(this, "Failured to Initialize!", Toast.LENGTH_LONG).show();
-    }
+            imageView = new ImageView(this);
+            params1 = new LinearLayout.LayoutParams(100, 100);
+            params1.setMargins(20, 0, 0, 0);
+            imageView.setLayoutParams(params1);
+            imageView.setImageResource(R.drawable.pause);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("paused");
+                }
+            });
+            ll.addView(imageView);
 
-    @Override
-    public void onInitializationSuccess(Provider provider, YouTubePlayer player, boolean wasRestored) {
-
-        /** add listeners to YouTubePlayer instance **/
-        player.setPlayerStateChangeListener(playerStateChangeListener);
-        player.setPlaybackEventListener(playbackEventListener);
-        //player.setFullscreen(true);
-
-        /** Start buffering **/
-        if (!wasRestored) {
-            player.cueVideo(VIDEO_ID);
+            imageView = new ImageView(this);
+            params1 = new LinearLayout.LayoutParams(100, 100);
+            params1.setMargins(20, 0, 0, 0);
+            imageView.setLayoutParams(params1);
+            imageView.setImageResource(R.drawable.back);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(Connection.CONNECTED)Connection.ref.child("video").child("back").push().setValue("yeah");
+                    if(Connection.CONNECTED)Connection.ref.child("video").child("playback").removeValue();
+                    finish();
+                }
+            });
+            ll.addView(imageView);
+            fl.addView(ll);
         }
     }
 
-    private PlaybackEventListener playbackEventListener = new PlaybackEventListener() {
+    public void onBackPressed(){
+        if(Connection.CONNECTED)Connection.ref.child("video").child("back").push().setValue("yeah");
+        if(Connection.CONNECTED)Connection.ref.child("video").child("playback").removeValue();
+        super.onBackPressed();
+    }
 
-        @Override
-        public void onBuffering(boolean arg0) {
-            Log.e("LOG","onBuffering");
+    public static class PlayerYouTubeFrag extends YouTubePlayerSupportFragment
+    {
+        private YouTubePlayer activePlayer;
+
+        public static PlayerYouTubeFrag newInstance(String videoid)        {
+
+            PlayerYouTubeFrag playerYouTubeFrag = new PlayerYouTubeFrag();
+            Bundle bundle = new Bundle();
+            bundle.putString("videoid", videoid);
+            playerYouTubeFrag.setArguments(bundle);
+            return playerYouTubeFrag;
         }
 
-        @Override
-        public void onPaused() {
-            Log.e("LOG","onPaused");
+        private void init(){
+
+            initialize("AIzaSyAHAXqbOC8IiAuKQwGhM4k3pSorZOdYbwE", new YouTubePlayer.OnInitializedListener(){
+
+                @Override
+                public void onInitializationFailure(YouTubePlayer.Provider arg0, YouTubeInitializationResult arg1){}
+
+                @Override
+                public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer player, boolean wasRestored) {
+
+                    activePlayer = player;
+                    activePlayer.setPlayerStyle(YouTubePlayer.PlayerStyle.DEFAULT);
+                    if (!wasRestored) {
+                        activePlayer.loadVideo(getArguments().getString("videoid"), 0);
+                    }
+                }
+            });
         }
+    }
 
-        @Override
-        public void onPlaying() {
-            Log.e("LOG","onPlaying");
-        }
 
-        @Override
-        public void onSeekTo(int arg0) {
-            Log.e("LOG","onSeekTo");
-        }
-
-        @Override
-        public void onStopped() {
-            Log.e("LOG","onStopped");
-        }
-
-    };
-
-    private PlayerStateChangeListener playerStateChangeListener = new PlayerStateChangeListener() {
-
-        @Override
-        public void onAdStarted() {
-            Log.e("LOG","onAdStarted");
-        }
-
-        @Override
-        public void onError(ErrorReason arg0) {
-            Log.e("LOG",arg0.name()+"__"+arg0.toString());
-        }
-
-        @Override
-        public void onLoaded(String arg0) {
-            Log.e("LOG","onLoaded");
-        }
-
-        @Override
-        public void onLoading() {
-            Log.e("LOG","onLoading");
-        }
-
-        @Override
-        public void onVideoEnded() {
-            Log.e("LOG","onVideoEnded");
-        }
-
-        @Override
-        public void onVideoStarted() {
-            Log.e("LOG","onVideoStarted");
-        }
-    };
 }

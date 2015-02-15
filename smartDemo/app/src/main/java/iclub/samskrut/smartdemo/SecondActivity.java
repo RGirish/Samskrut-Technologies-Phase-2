@@ -32,17 +32,19 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.firebase.client.Firebase;
-import com.google.android.youtube.player.YouTubeInitializationResult;
-import com.google.android.youtube.player.YouTubePlayer;
-import com.google.android.youtube.player.YouTubePlayerSupportFragment;
-import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.parse.CountCallback;
@@ -77,12 +79,10 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
     ArrayList<Integer> notAvailableList_V;
     int COUNT_VDB=0,CURR_COUNT_VDB=0;
     ArrayList<Integer> notAvailableList_VDB;
-    public static int PID;
     ProgressDialog dialog,dialog2,dialog3,dialog0,dialog4;
     public static String videoID;
     public static String MYURL;
     public static SQLiteDatabase db;
-    public static Firebase ref;
     public static int NO_360,NO_SS,NO_V;
 
     @Override
@@ -90,15 +90,9 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context=this;
-        PID = Integer.parseInt(getIntent().getStringExtra("code"));
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "28rzQwSoD7MFQOOViu9awAI0giaUDK8E7ADYbXAz", "jbYQAqhT1jcRiIUrS3UwuFuFOipjv04kUYhZpkEN");
-
-        if(checkConnection()){
-            Firebase.setAndroidContext(this);
-            ref=new Firebase("https://smartdemo.firebaseio.com/TV01");
-        }
 
         db=openOrCreateDatabase("smartdemo.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
         createTables();
@@ -119,7 +113,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
-                ref.child("tab").setValue(String.valueOf(position));
+                if(Connection.CONNECTED)Connection.ref.child("tab").setValue(String.valueOf(position));
                 actionBar.setSelectedNavigationItem(position);
             }
         });
@@ -134,8 +128,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
     @Override
     protected void onDestroy(){
-        //ref.
-        // removeValue();
+        //ref.removeValue();
         super.onDestroy();
     }
 
@@ -219,7 +212,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_three60, container, false);
             imageview=(ImageView)rootView.findViewById(R.id.imageframe);
-            Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
+            Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/360/"+Connection.PID+"_"+currentimagenumber+".jpg");
             imageview.setImageBitmap(bitmap);
             imageview.setOnTouchListener(this);
             return rootView;
@@ -268,21 +261,17 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         public void moveRight(){
             currentimagenumber--;
             if (currentimagenumber == 0) currentimagenumber = NO_360;
-            Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
+            Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/360/"+Connection.PID+"_"+currentimagenumber+".jpg");
             imageview.setImageBitmap(bmp);
-            if(checkConnection()) {
-                ref.child("360").push().setValue("r");
-            }
+            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue("r");
         }
 
         public void moveLeft(){
             currentimagenumber++;
             if(currentimagenumber==(NO_360+1)) currentimagenumber=1;
-            Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
+            Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/360/"+Connection.PID+"_"+currentimagenumber+".jpg");
             imageview.setImageBitmap(bmp);
-            if(checkConnection()) {
-                ref.child("360").push().setValue("l");
-            }
+            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue("l");
         }
 
     }
@@ -296,7 +285,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
         private static final String ARG_SECTION_NUMBER = "section_number";
         static View rootView;
-        private static final int NUM_PAGES = NO_SS;
+        private static int NUM_PAGES = NO_SS;
         private static ViewPager mPager;
         private static PagerAdapter mPagerAdapter;
 
@@ -319,7 +308,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
                 @Override
                 public void onPageSelected(final int position) {
-                    ref.child("ss").setValue(String.valueOf(position));
+                    if(Connection.CONNECTED)Connection.ref.child("ss").setValue(String.valueOf(position));
                 }
             };
             mPager.setOnPageChangeListener(mPageChangeListener);
@@ -388,27 +377,24 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 params=new LinearLayout.LayoutParams(width/2-10, (width/2-10)*2/3);
                 params.setMargins(5,5,5,5);
                 iv.setLayoutParams(params);
-                Bitmap bitmap=BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/video/"+PID+"_"+i+".jpg");
+                Bitmap bitmap=BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/video/"+Connection.PID+"_"+i+".jpg");
                 Drawable d = new BitmapDrawable(getResources(),bitmap);
                 iv.setBackgroundDrawable(d);
                 iv.setImageResource(R.drawable.ic_play);
                 iv.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Cursor c=db.rawQuery("SELECT videoid FROM video WHERE pid="+PID+" AND position="+i2,null);
+                        Cursor c=db.rawQuery("SELECT videoid FROM video WHERE pid="+Connection.PID+" AND position="+i2,null);
                         try{
                             c.moveToFirst();
                             videoID=c.getString(0);
                         }catch(Exception e){videoID="nothing";}
-                        ref.child("video").child("id").push().setValue(videoID);
+                        if(Connection.CONNECTED)Connection.ref.child("video").child("id").push().setValue(videoID);
 
                         Intent intent=new Intent(getActivity(),YoutubeActivity.class);
                         intent.putExtra("videoid",videoID);
-                        Toast.makeText(getActivity(),String.valueOf(videoID),Toast.LENGTH_LONG).show();
+                        intent.putExtra("pos",String.valueOf(i2));
                         startActivity(intent);
-
-                        //Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
-                        //getActivity().startActivityForResult(intent2, 101);
                     }
                 });
                 ll.addView(iv);
@@ -440,13 +426,12 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 if (result != null) {
                     Intent intent=new Intent(this,SecondActivity.class);
                     intent.putExtra("code",result);
+                    Connection.PID=Integer.parseInt(result);
+                    if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
                     startActivity(intent);
                     finish();
                 }
-                break;
-            case 101:
-                ref.child("video").child("back").push().setValue("yeah");
-                break;
+
             default:
         }
     }
@@ -467,19 +452,19 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         if (!folder.exists()) {
             folder.mkdir();
         }
-        File folder2 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID);
+        File folder2 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID);
         if (!folder2.exists()) {
             folder2.mkdir();
         }
-        File folder3 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/360");
+        File folder3 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/360");
         if (!folder3.exists()) {
             folder3.mkdir();
         }
-        File folder4 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/ss");
+        File folder4 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/ss");
         if (!folder4.exists()) {
             folder4.mkdir();
         }
-        File folder5 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/video");
+        File folder5 = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/video");
         if (!folder5.exists()) {
             folder5.mkdir();
         }
@@ -488,11 +473,12 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         //Set number of slideshow, 360, video thumbnails images
         Cursor c=null;
         try{
-            c = db.rawQuery("SELECT no_ss,no_360,no_v FROM no WHERE pid=" + PID + ";", null);
+            c = db.rawQuery("SELECT no_ss,no_360,no_v FROM no WHERE pid=" + Connection.PID + ";", null);
             c.moveToFirst();
             NO_SS=c.getInt(0);
             NO_360=c.getInt(1);
             NO_V=c.getInt(2);
+            SlideshowFragment.NUM_PAGES=NO_SS;
             downloadEverything();
             setupTabs();
         }catch(Exception e) {
@@ -505,14 +491,15 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 final ParseQuery<ParseObject> query1 = ParseQuery.getQuery("Test2Slideshow");
                 final ParseQuery<ParseObject> query2 = ParseQuery.getQuery("Test2");
                 final ParseQuery<ParseObject> query3 = ParseQuery.getQuery("productvideos");
-                query1.whereEqualTo("pid", PID);
-                query2.whereEqualTo("pid", PID);
-                query3.whereEqualTo("pid", PID);
+                query1.whereEqualTo("pid", Connection.PID);
+                query2.whereEqualTo("pid", Connection.PID);
+                query3.whereEqualTo("pid", Connection.PID);
 
                 query1.countInBackground(new CountCallback() {
                     public void done(int count, ParseException e) {
                         if (e == null) {
                             NO_SS = count;
+                            SlideshowFragment.NUM_PAGES=NO_SS;
                             query2.countInBackground(new CountCallback() {
                                 public void done(int count, ParseException e) {
                                     if (e == null) {
@@ -521,7 +508,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                                             public void done(int count, ParseException e) {
                                                 if (e == null) {
                                                     NO_V = count;
-                                                    db.execSQL("INSERT INTO no VALUES(" + PID + "," + NO_SS + "," + NO_360 + "," + NO_V + ");");
+                                                    db.execSQL("INSERT INTO no VALUES(" + Connection.PID + "," + NO_SS + "," + NO_360 + "," + NO_V + ");");
                                                     dialog0.dismiss();
                                                     downloadEverything();
                                                     setupTabs();
@@ -551,7 +538,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         notAvailableList_360 = new ArrayList<>(NO_360);
         notAvailableList_360.clear();
         for (int i = 1; i <= NO_360; ++i) {
-            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + PID + "/360/" + PID + "_" + i + ".jpg";
+            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/360/" + Connection.PID + "_" + i + ".jpg";
             File file = new File(FILENAME);
             if (!file.exists()) {
                 notAvailableList_360.add(i);
@@ -565,7 +552,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 COUNT_360 = notAvailableList_360.size();
                 for (final int k : notAvailableList_360) {
                     ParseQuery<ParseObject> query = ParseQuery.getQuery("Test2");
-                    query.whereEqualTo("pid", PID);
+                    query.whereEqualTo("pid", Connection.PID);
                     query.whereEqualTo("position", k);
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
@@ -574,12 +561,12 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                                 myFile.getDataInBackground(new GetDataCallback() {
                                     public void done(byte[] data, ParseException e) {
                                         if (e == null) {
-                                            writeFile_360(data, PID + "_" + k + ".jpg");
+                                            writeFile_360(data, Connection.PID + "_" + k + ".jpg");
                                             CURR_COUNT_360++;
                                             if (CURR_COUNT_360 == COUNT_360) {
                                                 dialog.dismiss();
                                                 Three60Fragment.currentimagenumber = 1;
-                                                Three60Fragment.imageview.setImageBitmap(BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + PID + "/360/" + PID + "_1.jpg"));
+                                                Three60Fragment.imageview.setImageBitmap(BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/360/" + Connection.PID + "_1.jpg"));
                                             }
                                         } else {
                                             Log.e("Something went wrong", "Something went wrong");
@@ -604,7 +591,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         notAvailableList_SS = new ArrayList<>(NO_SS);
         notAvailableList_SS.clear();
         for (int i = 1; i <= NO_SS; ++i) {
-            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + PID + "/ss/" + PID + "_" + i + ".jpg";
+            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/ss/" + Connection.PID + "_" + i + ".jpg";
             File file = new File(FILENAME);
             if (!file.exists()) {
                 notAvailableList_SS.add(i);
@@ -618,7 +605,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 COUNT_SS = notAvailableList_SS.size();
                 for (final int k : notAvailableList_SS) {
                     ParseQuery<ParseObject> query = ParseQuery.getQuery("Test2Slideshow");
-                    query.whereEqualTo("pid", PID);
+                    query.whereEqualTo("pid", Connection.PID);
                     query.whereEqualTo("position", k);
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
@@ -627,7 +614,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                                 myFile.getDataInBackground(new GetDataCallback() {
                                     public void done(byte[] data, ParseException e) {
                                         if (e == null) {
-                                            writeFile_SS(data, PID + "_" + k + ".jpg");
+                                            writeFile_SS(data, Connection.PID + "_" + k + ".jpg");
                                             CURR_COUNT_SS++;
                                             if (CURR_COUNT_SS == COUNT_SS) {
                                                 SlideshowFragment.mPager = (ViewPager) SlideshowFragment.rootView.findViewById(R.id.slideshowpager);
@@ -655,7 +642,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         notAvailableList_V = new ArrayList<>(NO_V);
         notAvailableList_V.clear();
         for (int i = 1; i <= NO_V; ++i) {
-            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + PID + "/video/" + PID + "_" + i + ".jpg";
+            String FILENAME = Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/video/" + Connection.PID + "_" + i + ".jpg";
             File file = new File(FILENAME);
             if (!file.exists()) {
                 notAvailableList_V.add(i);
@@ -670,7 +657,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
                 for (final int k : notAvailableList_V) {
                     ParseQuery<ParseObject> query = ParseQuery.getQuery("productvideos");
-                    query.whereEqualTo("pid", PID);
+                    query.whereEqualTo("pid", Connection.PID);
                     query.whereEqualTo("position", k);
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
@@ -679,9 +666,9 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                                 MYURL = videoUrl;
                                 String[] parts = videoUrl.split("v=");
                                 videoID = parts[1];
-                                db.execSQL("INSERT INTO video VALUES(" + PID + "," + k + ",'" + MYURL + "','" + videoID + "');");
+                                db.execSQL("INSERT INTO video VALUES(" + Connection.PID + "," + k + ",'" + MYURL + "','" + videoID + "');");
                                 String thumbnailUrl = "http://img.youtube.com/vi/" + parts[1] + "/0.jpg";
-                                startDownload(thumbnailUrl, PID + "_" + k + ".jpg");
+                                startDownload(thumbnailUrl, Connection.PID + "_" + k + ".jpg");
                             } else {
                                 Log.e("PARSE", "Error: " + e.getMessage());
                             }
@@ -701,7 +688,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         notAvailableList_VDB = new ArrayList<>(NO_V);
         notAvailableList_VDB.clear();
         for (int pos = 1; pos <= NO_V; ++pos) {
-            Cursor c = db.rawQuery("SELECT videoid FROM video WHERE pid=" + PID + " AND position=" + pos + ";", null);
+            Cursor c = db.rawQuery("SELECT videoid FROM video WHERE pid=" + Connection.PID + " AND position=" + pos + ";", null);
             try{
                 c.moveToFirst();
                 c.getString(0);
@@ -719,7 +706,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
                 for (final int pos : notAvailableList_VDB) {
                     ParseQuery<ParseObject> query = ParseQuery.getQuery("productvideos");
-                    query.whereEqualTo("pid", PID);
+                    query.whereEqualTo("pid", Connection.PID);
                     query.whereEqualTo("position", pos);
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
@@ -728,7 +715,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                                 MYURL = videoUrl;
                                 String[] parts = videoUrl.split("v=");
                                 videoID = parts[1];
-                                db.execSQL("INSERT INTO video VALUES(" + PID + "," + pos + ",'" + MYURL + "','" + videoID + "');");
+                                db.execSQL("INSERT INTO video VALUES(" + Connection.PID + "," + pos + ",'" + MYURL + "','" + videoID + "');");
                                 CURR_COUNT_VDB++;
                                 if (CURR_COUNT_VDB == COUNT_VDB) dialog4.dismiss();
                             } else {
@@ -770,7 +757,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 conexion.connect();
                 int lenghtOfFile = conexion.getContentLength();
                 InputStream input = new BufferedInputStream(url.openStream());
-                OutputStream output = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p"+PID+"/video/" + filename);
+                OutputStream output = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p"+Connection.PID+"/video/" + filename);
 
                 byte data[] = new byte[512];
                 long total = 0;
@@ -785,7 +772,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
             }
             catch(Exception e){
-                File file = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/video/" + aurl[1]);
+                File file = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/video/" + aurl[1]);
                 file.delete();
             }
             return null;
@@ -808,7 +795,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
     public void writeFile_360(byte[] data, String fileName) {
         try {
-            FileOutputStream out = new FileOutputStream(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/360/"+fileName);
+            FileOutputStream out = new FileOutputStream(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/360/"+fileName);
             out.write(data);
             out.close();
         }catch(Exception e){
@@ -818,7 +805,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
 
     public void writeFile_SS(byte[] data, String fileName) {
         try {
-            FileOutputStream out = new FileOutputStream(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/ss/"+fileName);
+            FileOutputStream out = new FileOutputStream(Environment.getExternalStorageDirectory() + "/showcommerce/p"+Connection.PID+"/ss/"+fileName);
             out.write(data);
             out.close();
         }catch(Exception e){
@@ -827,6 +814,60 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
     }
 
 
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(!Connection.CONNECTED){
+            final Dialog dialog = new Dialog(this);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            dialog.setContentView(R.layout.dialog_connect);
+            Button connect = (Button) dialog.findViewById(R.id.connectBtn);
+            connect.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    String uniqueCode = ((TextView) dialog.findViewById(R.id.uniqueCode)).getText().toString();
+                    Connection.ref = new Firebase("https://smartdemo.firebaseio.com/" + uniqueCode);
+                    Connection.ref.child("pid").push().setValue(Connection.PID);
+                    Connection.CONNECTED = true;
+                    dialog.dismiss();
+                    Toast.makeText(SecondActivity.this, "Connected to TV" + uniqueCode, Toast.LENGTH_LONG).show();
+                }
+            });
+            dialog.show();
+        }else{
+            final Dialog dialog = new Dialog(this);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialog.setContentView(R.layout.dialog_disconnect);
+            Button disconnect = (Button) dialog.findViewById(R.id.disconnect);
+            disconnect.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Connection.ref = null;
+                    Connection.CONNECTED = false;
+                    dialog.dismiss();
+                    Toast.makeText(SecondActivity.this, "Disconnected from TV", Toast.LENGTH_LONG).show();
+                }
+            });
+            Button cancel = (Button) dialog.findViewById(R.id.cancel);
+            cancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    dialog.dismiss();
+                }
+            });
+            dialog.show();
+        }
+        return true;
+    }
 
 
 

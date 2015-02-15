@@ -52,7 +52,9 @@ public class ScreenSlidePageFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         ViewGroup rootView = (ViewGroup) inflater.inflate(R.layout.fragment_screen_slide_page, container, false);
-        bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + FirstActivity.PID + "/ss/" + FirstActivity.PID + "_" + (mPageNumber + 1) + ".jpg");
+        BitmapFactory.Options options=new BitmapFactory.Options();
+        options.inSampleSize = 4;
+        bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + FirstActivity.PID + "/ss/" + FirstActivity.PID + "_" + (mPageNumber + 1) + ".jpg",options);
         ((ImageView)rootView.findViewById(R.id.imageyo)).setImageBitmap(bitmap);
         return rootView;
     }

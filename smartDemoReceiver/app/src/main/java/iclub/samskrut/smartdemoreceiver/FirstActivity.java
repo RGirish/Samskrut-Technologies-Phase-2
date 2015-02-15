@@ -41,7 +41,6 @@ import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
-import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
@@ -69,7 +68,6 @@ public class FirstActivity extends ActionBarActivity{
     ArrayList<Integer> notAvailableList_SS;
     int COUNT_360=0,CURR_COUNT_360=0;
     ArrayList<Integer> notAvailableList_360;
-    private int currentimagenumber=1;
     int COUNT_V=0,CURR_COUNT_V=0;
     ArrayList<Integer> notAvailableList_V;
     int COUNT_VDB=0,CURR_COUNT_VDB=0;
@@ -91,7 +89,8 @@ public class FirstActivity extends ActionBarActivity{
 
         VIDEO_ACTIVITY_REQUEST_CODE=99;
 
-        PID = 181;
+        Intent intent=getIntent();
+        PID = intent.getIntExtra("PID",130);
         ob=new TheClass();
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
@@ -99,8 +98,30 @@ public class FirstActivity extends ActionBarActivity{
 
         if(checkConnection()){
             Firebase.setAndroidContext(this);
-            ref=new Firebase("https://smartdemo.firebaseio.com/TV01");
+            ref=new Firebase("https://smartdemo.firebaseio.com/1234");
             ref.removeValue();
+
+
+            //Firebase Listener for PID
+            ref.child("pid").addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                    Intent intent=new Intent(FirstActivity.this,FirstActivity.class);
+                    intent.putExtra("PID",Integer.parseInt(snapshot.getValue().toString()));
+                    startActivity(intent);
+                    finish();
+                }
+                @Override
+                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onChildRemoved(DataSnapshot snapshot) {}
+                @Override
+                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {}
+            });
+
+
             //Firebase Listener for Change of Tab
             ref.child("tab").addValueEventListener(new ValueEventListener() {
                 @Override
@@ -182,24 +203,16 @@ public class FirstActivity extends ActionBarActivity{
                     } else {
                         new Thread(new Task_360("l")).start();
                     }
+                    Log.e("INSIDE listener","INSIDE listener");
                 }
-
                 @Override
-                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {
-
-                }
-
+                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
                 @Override
-                public void onChildRemoved(DataSnapshot snapshot) {
-                }
-
+                public void onChildRemoved(DataSnapshot snapshot) {}
                 @Override
-                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {
-                }
-
+                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
                 @Override
-                public void onCancelled(FirebaseError firebaseError) {
-                }
+                public void onCancelled(FirebaseError firebaseError) {}
             });
 
         }
@@ -279,8 +292,9 @@ public class FirstActivity extends ActionBarActivity{
             runOnUiThread(new Runnable(){
                 public void run() {
                     VIDEO_ACTIVITY_REQUEST_CODE++;
-                    Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(FirstActivity.this, "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", s, 0, true, true);
-                    startActivityForResult(intent2,VIDEO_ACTIVITY_REQUEST_CODE);
+                    Intent intent=new Intent(FirstActivity.this,YoutubeActivity.class);
+                    intent.putExtra("videoid",s);
+                    startActivityForResult(intent,VIDEO_ACTIVITY_REQUEST_CODE);
                 }
             });
         }
@@ -290,6 +304,7 @@ public class FirstActivity extends ActionBarActivity{
                 public void run() {
                     if(s.equals("r")) Three60Fragment.moveRight();
                     else Three60Fragment.moveLeft();
+                    Log.e("HEY","INSDE 360");
                 }
             });
         }
@@ -303,7 +318,7 @@ public class FirstActivity extends ActionBarActivity{
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
         mPager = (MyViewPager) findViewById(R.id.pager_main);
-        mPager.setSwipeable(true);
+        mPager.setSwipeable(false);
         mPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int i, float v, int i2) {}
@@ -451,7 +466,7 @@ public class FirstActivity extends ActionBarActivity{
 
         private static final String ARG_SECTION_NUMBER = "section_number";
         static View rootView;
-        private static final int NUM_PAGES = NO_SS;
+        private static int NUM_PAGES = NO_SS;
         private static ViewPager mPager;
         private static PagerAdapter mPagerAdapter;
 
@@ -548,8 +563,13 @@ public class FirstActivity extends ActionBarActivity{
                             videoID=c.getString(0);
                             c.close();
                         }catch(Exception e){videoID="nothing";}
-                        Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
-                        getActivity().startActivity(intent2);
+
+                        Intent intent=new Intent(getActivity(),YoutubeActivity.class);
+                        intent.putExtra("videoid",videoID);
+                        startActivity(intent);
+
+                        //Intent intent2 = YouTubeStandalonePlayer.createVideoIntent(getActivity(), "AIzaSyCYcvf7CDroQuJv0UYmlON8Eb-TBngEbdI", videoID, 0, true, true);
+                        //getActivity().startActivity(intent2);
 
                     }
                 });
@@ -606,6 +626,8 @@ public class FirstActivity extends ActionBarActivity{
             NO_SS=c.getInt(0);
             NO_360=c.getInt(1);
             NO_V=c.getInt(2);
+            SlideshowFragment.NUM_PAGES=NO_SS;
+            Three60Fragment.currentimagenumber=1;
             c.close();
             downloadEverything();
             setupTabs();
@@ -628,11 +650,13 @@ public class FirstActivity extends ActionBarActivity{
                     public void done(int count, com.parse.ParseException e) {
                         if (e == null) {
                             NO_SS = count;
+                            SlideshowFragment.NUM_PAGES=NO_SS;
                             query2.countInBackground(new CountCallback() {
                                 @Override
                                 public void done(int count, com.parse.ParseException e) {
                                     if (e == null) {
                                         NO_360 = count;
+                                        Three60Fragment.currentimagenumber=1;
                                         query3.countInBackground(new CountCallback() {
                                             @Override
                                             public void done(int count, com.parse.ParseException e) {

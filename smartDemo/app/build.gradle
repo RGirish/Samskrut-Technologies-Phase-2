@@ -6,8 +6,8 @@ android {
 
     defaultConfig {
         applicationId "iclub.samskrut.smartdemo"
-        minSdkVersion 11
-        targetSdkVersion 19
+        minSdkVersion 17
+        targetSdkVersion 21
     }
     buildTypes {
         release {
