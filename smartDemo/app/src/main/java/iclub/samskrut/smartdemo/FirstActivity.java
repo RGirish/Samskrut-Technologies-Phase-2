@@ -2,6 +2,8 @@ package iclub.samskrut.smartdemo;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v7.app.ActionBar;
@@ -24,7 +26,7 @@ import com.google.zxing.integration.android.IntentResult;
 
 public class FirstActivity extends ActionBarActivity {
 
-
+    public static SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +39,35 @@ public class FirstActivity extends ActionBarActivity {
 
         Connection.CONNECTED=false;
         Firebase.setAndroidContext(FirstActivity.this);
+
+        db=openOrCreateDatabase("smartdemo.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
+        createTables();
+
+        try {
+            Cursor cursor = db.rawQuery("SELECT pid FROM previous_session;", null);
+            cursor.moveToFirst();
+            int pid= cursor.getInt(0);
+            Intent intent=new Intent(this,SecondActivity.class);
+            intent.putExtra("code",String.valueOf(pid));
+            Connection.PID=pid;
+            db.execSQL("DELETE FROM previous_session;");
+            db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
+            if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
+            startActivity(intent);
+            finish();
+        }catch (Exception e){}
+    }
+
+    public void createTables(){
+        try{
+            db.execSQL("CREATE TABLE video(pid NUMBER, position NUMBER, url TEXT, videoid TEXT);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE no(pid NUMBER, no_ss NUMBER, no_360 NUMBER, no_v NUMBER);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE previous_session(pid NUMBER);");
+        }catch(Exception e){}
     }
 
     public void onClickScan(View view){
@@ -58,6 +89,8 @@ public class FirstActivity extends ActionBarActivity {
                     Intent intent=new Intent(this,SecondActivity.class);
                     intent.putExtra("code",result);
                     Connection.PID=Integer.parseInt(result);
+                    db.execSQL("DELETE FROM previous_session;");
+                    db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
                     if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
                     startActivity(intent);
                     finish();

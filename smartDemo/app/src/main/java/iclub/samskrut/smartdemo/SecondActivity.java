@@ -64,10 +64,12 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class SecondActivity extends ActionBarActivity implements ActionBar.TabListener {
 
+    int currentTabNumber=0;
     public static Context context;
     SectionsPagerAdapter mSectionsPagerAdapter;
     MyViewPager mViewPager;
@@ -84,12 +86,16 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
     public static String MYURL;
     public static SQLiteDatabase db;
     public static int NO_360,NO_SS,NO_V;
+    private ScheduleClient scheduleClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context=this;
+
+        scheduleClient = new ScheduleClient(this);
+        scheduleClient.doBindService();
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "28rzQwSoD7MFQOOViu9awAI0giaUDK8E7ADYbXAz", "jbYQAqhT1jcRiIUrS3UwuFuFOipjv04kUYhZpkEN");
@@ -113,6 +119,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
+                currentTabNumber=position;
                 if(Connection.CONNECTED)Connection.ref.child("tab").setValue(String.valueOf(position));
                 actionBar.setSelectedNavigationItem(position);
             }
@@ -125,10 +132,13 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
     }
 
 
-
     @Override
     protected void onDestroy(){
-        //ref.removeValue();
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.MINUTE, c.get(Calendar.MINUTE)+5);
+        int uid = (int) ((System.currentTimeMillis() + 1) & 0xfffffff);
+        scheduleClient.setAlarmForNotification(c, uid);
+        if(scheduleClient != null) scheduleClient.doUnbindService();
         super.onDestroy();
     }
 
@@ -139,6 +149,9 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         }catch(Exception e){}
         try{
             db.execSQL("CREATE TABLE no(pid NUMBER, no_ss NUMBER, no_360 NUMBER, no_v NUMBER);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE previous_session(pid NUMBER);");
         }catch(Exception e){}
     }
 
@@ -249,13 +262,6 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 }
             }
             return false;
-        }
-
-        public boolean checkConnection(){
-            ConnectivityManager connMgr = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
-            if (activeInfo == null ) return false;
-            else return true;
         }
 
         public void moveRight(){
@@ -427,6 +433,8 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                     Intent intent=new Intent(this,SecondActivity.class);
                     intent.putExtra("code",result);
                     Connection.PID=Integer.parseInt(result);
+                    db.execSQL("DELETE FROM previous_session;");
+                    db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
                     if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
                     startActivity(intent);
                     finish();
@@ -836,7 +844,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 public void onClick(View view) {
                     String uniqueCode = ((TextView) dialog.findViewById(R.id.uniqueCode)).getText().toString();
                     Connection.ref = new Firebase("https://smartdemo.firebaseio.com/" + uniqueCode);
-                    Connection.ref.child("pid").push().setValue(Connection.PID);
+                    Connection.ref.child("pid").push().setValue(String.valueOf(Connection.PID) + ";" + String.valueOf(currentTabNumber));
                     Connection.CONNECTED = true;
                     dialog.dismiss();
                     Toast.makeText(SecondActivity.this, "Connected to TV" + uniqueCode, Toast.LENGTH_LONG).show();

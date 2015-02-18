@@ -62,6 +62,7 @@ import java.util.List;
 
 public class FirstActivity extends ActionBarActivity{
 
+    public int tabPosition;
     SectionsPagerAdapter mSectionsPagerAdapter;
     MyViewPager mPager;
     int COUNT_SS=0,CURR_COUNT_SS=0;
@@ -81,6 +82,7 @@ public class FirstActivity extends ActionBarActivity{
     public static Firebase ref;
     public static int NO_360,NO_SS,NO_V,VIDEO_ACTIVITY_REQUEST_CODE;
     public static ActionBar actionBar;
+    boolean flag=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +93,7 @@ public class FirstActivity extends ActionBarActivity{
 
         Intent intent=getIntent();
         PID = intent.getIntExtra("PID",130);
+        tabPosition = intent.getIntExtra("tabPosition",777);
         ob=new TheClass();
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
@@ -106,8 +109,18 @@ public class FirstActivity extends ActionBarActivity{
             ref.child("pid").addChildEventListener(new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                    Intent intent=new Intent(FirstActivity.this,FirstActivity.class);
-                    intent.putExtra("PID",Integer.parseInt(snapshot.getValue().toString()));
+                    Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
+                    String[] parts;
+                    String pid="",tabPosition="";
+                    try {
+                        parts = snapshot.getValue().toString().split(";");
+                        pid = parts[0];
+                        tabPosition = parts[1];
+                    }catch (Exception e){
+                        tabPosition="777";
+                    }
+                    intent.putExtra("PID", Integer.parseInt(pid));
+                    intent.putExtra("tabPosition", Integer.parseInt(tabPosition));
                     startActivity(intent);
                     finish();
                 }
@@ -194,27 +207,25 @@ public class FirstActivity extends ActionBarActivity{
 
 
             //Firebase Listener for 360 View
-
             ref.child("360").addChildEventListener(new ChildEventListener() {
+
                 @Override
-                public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                    if (snapshot.getValue().toString().equals("r")) {
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    if (dataSnapshot.getValue().toString().equals("r")) {
                         new Thread(new Task_360("r")).start();
                     } else {
                         new Thread(new Task_360("l")).start();
                     }
-                    Log.e("INSIDE listener","INSIDE listener");
                 }
                 @Override
-                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
                 @Override
-                public void onChildRemoved(DataSnapshot snapshot) {}
+                public void onChildRemoved(DataSnapshot dataSnapshot) {}
                 @Override
-                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
                 @Override
                 public void onCancelled(FirebaseError firebaseError) {}
             });
-
         }
 
         db=openOrCreateDatabase("smartdemo.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
@@ -263,6 +274,7 @@ public class FirstActivity extends ActionBarActivity{
         Task_360(String parameter){
             s=parameter;
         }
+
         @Override
         public void run() {
             ob.send_360(s);
@@ -301,11 +313,15 @@ public class FirstActivity extends ActionBarActivity{
 
         public synchronized void send_360(final String s){
             runOnUiThread(new Runnable(){
+
                 public void run() {
-                    if(s.equals("r")) Three60Fragment.moveRight();
-                    else Three60Fragment.moveLeft();
-                    Log.e("HEY","INSDE 360");
+                    if(s.equals("r")){
+                        Three60Fragment.moveRight();
+                    }else{
+                        Three60Fragment.moveLeft();
+                    }
                 }
+
             });
         }
     }
@@ -334,6 +350,7 @@ public class FirstActivity extends ActionBarActivity{
             public void onPageScrollStateChanged(int i) {}
         });
         mPager.setAdapter(mSectionsPagerAdapter);
+        if(tabPosition!=777) mPager.setCurrentItem(tabPosition);
     }
 
 

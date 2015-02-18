@@ -33,6 +33,8 @@
             <meta-data android:name="isLaunchableActivity" android:value="true"/>
         </activity>
 
+        <service android:name=".ScheduleService" />
+        <service android:name=".NotifyService" />
 
     </application>
 
