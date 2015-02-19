@@ -107,6 +107,7 @@ public class YoutubeActivity extends FragmentActivity {
             Bundle bundle = new Bundle();
             bundle.putString("videoid", videoid);
             playerYouTubeFrag.setArguments(bundle);
+
             return playerYouTubeFrag;
         }
 
