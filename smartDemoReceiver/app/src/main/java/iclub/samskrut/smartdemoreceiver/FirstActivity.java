@@ -210,11 +210,12 @@ public class FirstActivity extends ActionBarActivity{
 
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    if (dataSnapshot.getValue().toString().equals("r")) {
+                    new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
+                    /*if (dataSnapshot.getValue().toString().equals("r")) {
                         new Thread(new Task_360("r")).start();
                     } else {
                         new Thread(new Task_360("l")).start();
-                    }
+                    }*/
                 }
                 @Override
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
@@ -314,11 +315,12 @@ public class FirstActivity extends ActionBarActivity{
             runOnUiThread(new Runnable(){
 
                 public void run() {
-                    if(s.equals("r")){
+                    Three60Fragment.move(s);
+                    /*if(s.equals("r")){
                         Three60Fragment.moveRight();
                     }else{
                         Three60Fragment.moveLeft();
-                    }
+                    }*/
                 }
 
             });
@@ -455,6 +457,11 @@ public class FirstActivity extends ActionBarActivity{
                 }
             }
             return false;
+        }
+
+        public static void move(String s){
+            Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+s+".jpg");
+            imageview.setImageBitmap(bmp);
         }
 
         public static void moveRight(){

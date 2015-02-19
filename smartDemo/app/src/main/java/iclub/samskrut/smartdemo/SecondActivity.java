@@ -269,7 +269,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
             if (currentimagenumber == 0) currentimagenumber = NO_360;
             Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/360/"+Connection.PID+"_"+currentimagenumber+".jpg");
             imageview.setImageBitmap(bmp);
-            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue("r");
+            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue(currentimagenumber);
         }
 
         public void moveLeft(){
@@ -277,7 +277,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
             if(currentimagenumber==(NO_360+1)) currentimagenumber=1;
             Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+Connection.PID+"/360/"+Connection.PID+"_"+currentimagenumber+".jpg");
             imageview.setImageBitmap(bmp);
-            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue("l");
+            if(Connection.CONNECTED)Connection.ref.child("360").push().setValue(currentimagenumber);
         }
 
     }
