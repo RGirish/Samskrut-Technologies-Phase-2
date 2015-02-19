@@ -62,7 +62,7 @@ import java.util.List;
 
 public class FirstActivity extends ActionBarActivity{
 
-    public int tabPosition;
+    public static int tabPosition,slidePosition,three60Position;
     SectionsPagerAdapter mSectionsPagerAdapter;
     MyViewPager mPager;
     int COUNT_SS=0,CURR_COUNT_SS=0;
@@ -94,6 +94,8 @@ public class FirstActivity extends ActionBarActivity{
         Intent intent=getIntent();
         PID = intent.getIntExtra("PID",130);
         tabPosition = intent.getIntExtra("tabPosition",777);
+        slidePosition = intent.getIntExtra("slidePosition",777);
+        three60Position = intent.getIntExtra("three60Position",777);
         ob=new TheClass();
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
@@ -111,16 +113,22 @@ public class FirstActivity extends ActionBarActivity{
                 public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
                     Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
                     String[] parts;
-                    String pid="",tabPosition="";
+                    String pid="",tabPosition="",slidePosition="",three60Position="";
                     try {
                         parts = snapshot.getValue().toString().split(";");
                         pid = parts[0];
                         tabPosition = parts[1];
+                        slidePosition = parts[2];
+                        three60Position = parts[3];
                     }catch (Exception e){
                         tabPosition="777";
+                        slidePosition="777";
+                        three60Position="777";
                     }
                     intent.putExtra("PID", Integer.parseInt(pid));
                     intent.putExtra("tabPosition", Integer.parseInt(tabPosition));
+                    intent.putExtra("slidePosition", Integer.parseInt(slidePosition));
+                    intent.putExtra("three60Position", Integer.parseInt(three60Position));
                     startActivity(intent);
                     finish();
                 }
@@ -209,13 +217,13 @@ public class FirstActivity extends ActionBarActivity{
             ref.child("360").addChildEventListener(new ChildEventListener() {
 
                 @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                public synchronized void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    /*if(flag){
+                        new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
+                        Log.e("yo","yo");
+                    }
+                    flag=!flag;*/
                     new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
-                    /*if (dataSnapshot.getValue().toString().equals("r")) {
-                        new Thread(new Task_360("r")).start();
-                    } else {
-                        new Thread(new Task_360("l")).start();
-                    }*/
                 }
                 @Override
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
@@ -316,11 +324,6 @@ public class FirstActivity extends ActionBarActivity{
 
                 public void run() {
                     Three60Fragment.move(s);
-                    /*if(s.equals("r")){
-                        Three60Fragment.moveRight();
-                    }else{
-                        Three60Fragment.moveLeft();
-                    }*/
                 }
 
             });
@@ -404,7 +407,7 @@ public class FirstActivity extends ActionBarActivity{
         private static final String ARG_SECTION_NUMBER = "section_number";
         private static ImageView imageview;
         int x,y,cx,cy;
-        private static int currentimagenumber=1;
+        private static int currentimagenumber;
 
         public static Three60Fragment newInstance(int sectionNumber) {
             Three60Fragment fragment = new Three60Fragment();
@@ -420,7 +423,15 @@ public class FirstActivity extends ActionBarActivity{
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_360, container, false);
             imageview=(ImageView)rootView.findViewById(R.id.three60ImageView);
-            Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
+            //Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");;
+            Bitmap bitmap;
+            if(three60Position!=777){
+                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+three60Position+".jpg");
+                three60Position=777;
+            }
+            else{
+                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
+            }
             imageview.setImageBitmap(bitmap);
             imageview.setOnTouchListener(this);
             return rootView;
@@ -510,6 +521,10 @@ public class FirstActivity extends ActionBarActivity{
             mPager = (ViewPager) rootView.findViewById(R.id.slideshowViewPager);
             mPagerAdapter = new ScreenSlidePagerAdapter(getChildFragmentManager());
             mPager.setAdapter(mPagerAdapter);
+            if(slidePosition!=777){
+                mPager.setCurrentItem(slidePosition);
+                slidePosition=777;
+            }
             return rootView;
         }
 
@@ -650,7 +665,11 @@ public class FirstActivity extends ActionBarActivity{
             NO_360=c.getInt(1);
             NO_V=c.getInt(2);
             SlideshowFragment.NUM_PAGES=NO_SS;
-            Three60Fragment.currentimagenumber=1;
+            if(three60Position!=777){
+                Three60Fragment.currentimagenumber=three60Position;
+            }else{
+                Three60Fragment.currentimagenumber=1;
+            }
             c.close();
             downloadEverything();
             setupTabs();
@@ -679,7 +698,11 @@ public class FirstActivity extends ActionBarActivity{
                                 public void done(int count, com.parse.ParseException e) {
                                     if (e == null) {
                                         NO_360 = count;
-                                        Three60Fragment.currentimagenumber=1;
+                                        if(three60Position!=777){
+                                            Three60Fragment.currentimagenumber=three60Position;
+                                        }else{
+                                            Three60Fragment.currentimagenumber=1;
+                                        }
                                         query3.countInBackground(new CountCallback() {
                                             @Override
                                             public void done(int count, com.parse.ParseException e) {

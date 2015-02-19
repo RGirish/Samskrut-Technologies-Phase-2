@@ -69,7 +69,7 @@ import java.util.List;
 
 public class SecondActivity extends ActionBarActivity implements ActionBar.TabListener {
 
-    int currentTabNumber=0;
+    static int currentTabNumber=0,currentSlideNumber=0;
     public static Context context;
     SectionsPagerAdapter mSectionsPagerAdapter;
     MyViewPager mViewPager;
@@ -315,6 +315,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 @Override
                 public void onPageSelected(final int position) {
                     if(Connection.CONNECTED)Connection.ref.child("ss").setValue(String.valueOf(position));
+                    currentSlideNumber=position;
                 }
             };
             mPager.setOnPageChangeListener(mPageChangeListener);
@@ -844,7 +845,8 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                 public void onClick(View view) {
                     String uniqueCode = ((TextView) dialog.findViewById(R.id.uniqueCode)).getText().toString();
                     Connection.ref = new Firebase("https://smartdemo.firebaseio.com/" + uniqueCode);
-                    Connection.ref.child("pid").push().setValue(String.valueOf(Connection.PID) + ";" + String.valueOf(currentTabNumber));
+                    Connection.ref.child("pid").push().setValue(String.valueOf(Connection.PID) + ";" + String.valueOf(currentTabNumber) + ";" + String.valueOf(currentSlideNumber) + ";" + String.valueOf(Three60Fragment.currentimagenumber));
+                    //PID;tab;slide;360
                     Connection.CONNECTED = true;
                     dialog.dismiss();
                     Toast.makeText(SecondActivity.this, "Connected to TV" + uniqueCode, Toast.LENGTH_LONG).show();
