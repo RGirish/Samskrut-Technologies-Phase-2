@@ -205,7 +205,6 @@ public class FirstActivity extends ActionBarActivity{
                 public void onCancelled(FirebaseError firebaseError) {}
             });
 
-
             //Firebase Listener for 360 View
             ref.child("360").addChildEventListener(new ChildEventListener() {
 
