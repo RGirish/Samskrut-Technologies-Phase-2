@@ -1,6 +1,8 @@
 package iclub.samskrut.smartdemo;
 
+import android.app.AlarmManager;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -137,6 +139,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
         Calendar c = Calendar.getInstance();
         c.set(Calendar.MINUTE, c.get(Calendar.MINUTE)+5);
         int uid = (int) ((System.currentTimeMillis() + 1) & 0xfffffff);
+        db.execSQL("UPDATE previous_session SET uid='"+String.valueOf(uid)+"';");
         scheduleClient.setAlarmForNotification(c, uid);
         if(scheduleClient != null) scheduleClient.doUnbindService();
         super.onDestroy();
@@ -151,7 +154,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
             db.execSQL("CREATE TABLE no(pid NUMBER, no_ss NUMBER, no_360 NUMBER, no_v NUMBER);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE previous_session(pid NUMBER);");
+            db.execSQL("CREATE TABLE previous_session(pid NUMBER,uid TEXT);");
         }catch(Exception e){}
     }
 
@@ -435,7 +438,7 @@ public class SecondActivity extends ActionBarActivity implements ActionBar.TabLi
                     intent.putExtra("code",result);
                     Connection.PID=Integer.parseInt(result);
                     db.execSQL("DELETE FROM previous_session;");
-                    db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
+                    db.execSQL("INSERT INTO previous_session(pid) VALUES(" + Connection.PID + ");");
                     if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
                     startActivity(intent);
                     finish();

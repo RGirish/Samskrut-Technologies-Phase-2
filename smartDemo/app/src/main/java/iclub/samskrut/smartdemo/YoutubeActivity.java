@@ -9,12 +9,15 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerSupportFragment;
@@ -87,7 +90,26 @@ public class YoutubeActivity extends FragmentActivity {
                 }
             });
             ll.addView(imageView);
+
+            SeekBar seekBar=new SeekBar(this);
+            LinearLayout.LayoutParams sblp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
+            sblp.setMargins((int)getResources().getDimension(R.dimen.n20),0,(int)getResources().getDimension(R.dimen.n20),(int)getResources().getDimension(R.dimen.n20));
+            sblp.gravity=Gravity.BOTTOM;
+            seekBar.setLayoutParams(sblp);
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {}
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    Log.e("SEEK BAR PROGRESS",String.valueOf(seekBar.getProgress()));
+                }
+            });
+
             fl.addView(ll);
+            fl.addView(seekBar);
         }
     }
 

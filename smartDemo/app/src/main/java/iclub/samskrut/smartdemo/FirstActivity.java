@@ -1,6 +1,8 @@
 package iclub.samskrut.smartdemo;
 
+import android.app.AlarmManager;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -10,6 +12,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.Html;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -44,18 +47,34 @@ public class FirstActivity extends ActionBarActivity {
         createTables();
 
         try {
-            Cursor cursor = db.rawQuery("SELECT pid FROM previous_session;", null);
+            Cursor cursor = db.rawQuery("SELECT pid,uid FROM previous_session;", null);
             cursor.moveToFirst();
             int pid= cursor.getInt(0);
+            String uid= cursor.getString(1);
             Intent intent=new Intent(this,SecondActivity.class);
             intent.putExtra("code",String.valueOf(pid));
             Connection.PID=pid;
             db.execSQL("DELETE FROM previous_session;");
-            db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
+            db.execSQL("INSERT INTO previous_session(pid) VALUES(" + Connection.PID + ");");
             if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
+            cancelAlarmManager(Integer.parseInt(uid));
             startActivity(intent);
             finish();
         }catch (Exception e){}
+    }
+
+    public void cancelAlarmManager(int uid) {
+
+        try {
+            Intent intent = new Intent(this, NotifyService.class);
+            intent.putExtra(NotifyService.INTENT_NOTIFY, true);
+            PendingIntent displayIntent = PendingIntent.getService(this, uid, intent, PendingIntent.FLAG_NO_CREATE);
+            if (displayIntent != null) {
+                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                alarmManager.cancel(displayIntent);
+                displayIntent.cancel();
+            }
+        }catch (Exception e){Log.e("error", "werwerjnwernwerjnweerkjwerkjnwerkj");}
     }
 
     public void createTables(){
@@ -66,7 +85,7 @@ public class FirstActivity extends ActionBarActivity {
             db.execSQL("CREATE TABLE no(pid NUMBER, no_ss NUMBER, no_360 NUMBER, no_v NUMBER);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE previous_session(pid NUMBER);");
+            db.execSQL("CREATE TABLE previous_session(pid NUMBER,uid TEXT);");
         }catch(Exception e){}
     }
 
@@ -90,7 +109,7 @@ public class FirstActivity extends ActionBarActivity {
                     intent.putExtra("code",result);
                     Connection.PID=Integer.parseInt(result);
                     db.execSQL("DELETE FROM previous_session;");
-                    db.execSQL("INSERT INTO previous_session VALUES(" + Connection.PID + ");");
+                    db.execSQL("INSERT INTO previous_session(pid) VALUES(" + Connection.PID + ");");
                     if(Connection.CONNECTED)Connection.ref.child("pid").push().setValue(Connection.PID);
                     startActivity(intent);
                     finish();
