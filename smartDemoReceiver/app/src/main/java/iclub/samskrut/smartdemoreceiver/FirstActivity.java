@@ -81,7 +81,7 @@ public class FirstActivity extends ActionBarActivity{
     TheClass ob;
     public static int NO_360,NO_SS,NO_V,VIDEO_ACTIVITY_REQUEST_CODE;
     public static ActionBar actionBar;
-    boolean flag=true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +91,8 @@ public class FirstActivity extends ActionBarActivity{
         VIDEO_ACTIVITY_REQUEST_CODE=99;
 
         Firebase.setAndroidContext(this);
+        try{ParseCrashReporting.enable(this);}catch (Exception e){}
+        Parse.initialize(this, "28rzQwSoD7MFQOOViu9awAI0giaUDK8E7ADYbXAz", "jbYQAqhT1jcRiIUrS3UwuFuFOipjv04kUYhZpkEN");
 
         Intent intent=getIntent();
         PID = intent.getIntExtra("PID",-10);
@@ -104,48 +106,7 @@ public class FirstActivity extends ActionBarActivity{
             ImageView imageView = (ImageView)findViewById(R.id.firstScreenImageView);
             Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + File.separator + "showcommerce/default.jpg");
             imageView.setImageBitmap(bitmap);
-
-            if(checkConnection()){
-                Firebase ref=new Firebase("https://smartdemo.firebaseio.com/1234");
-                ref.removeValue();
-
-                //Firebase Listener for PID
-                ref.child("pid").addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                        Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
-                        String[] parts;
-                        String pid="",tabPosition="",slidePosition="",three60Position="";
-                        try {
-                            parts = snapshot.getValue().toString().split(";");
-                            pid = parts[0];
-                            tabPosition = parts[1];
-                            slidePosition = parts[2];
-                            three60Position = parts[3];
-                        }catch (Exception e){
-                            tabPosition="777";
-                            slidePosition="777";
-                            three60Position="777";
-                        }
-                        intent.putExtra("PID", Integer.parseInt(pid));
-                        intent.putExtra("tabPosition", Integer.parseInt(tabPosition));
-                        intent.putExtra("slidePosition", Integer.parseInt(slidePosition));
-                        intent.putExtra("three60Position", Integer.parseInt(three60Position));
-                        Log.e("startacti","startacti");
-                        startActivity(intent);
-                        finish();
-                    }
-                    @Override
-                    public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onChildRemoved(DataSnapshot snapshot) {}
-                    @Override
-                    public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {}
-                });
-
-            }
+            setFirebaseListeners("nopid");
         }
         else{
             tabPosition = intent.getIntExtra("tabPosition",777);
@@ -153,55 +114,68 @@ public class FirstActivity extends ActionBarActivity{
             three60Position = intent.getIntExtra("three60Position",777);
             ob=new TheClass();
 
-            try{ParseCrashReporting.enable(this);}catch (Exception e){}
-            Parse.initialize(this, "28rzQwSoD7MFQOOViu9awAI0giaUDK8E7ADYbXAz", "jbYQAqhT1jcRiIUrS3UwuFuFOipjv04kUYhZpkEN");
+            setFirebaseListeners("pid");
 
-            if(checkConnection()){
-                Firebase ref = new Firebase("https://smartdemo.firebaseio.com/1234");
-                ref.removeValue();
+            db=openOrCreateDatabase("smartdemo.db", SQLiteDatabase.CREATE_IF_NECESSARY, null);
+            createTables();
 
-                //Firebase Listener for PID
-                ref.child("pid").addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                        Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
-                        String[] parts;
-                        String pid="",tabPosition="",slidePosition="",three60Position="";
-                        try {
-                            parts = snapshot.getValue().toString().split(";");
-                            pid = parts[0];
-                            tabPosition = parts[1];
-                            slidePosition = parts[2];
-                            three60Position = parts[3];
-                        }catch (Exception e){
-                            tabPosition="777";
-                            slidePosition="777";
-                            three60Position="777";
-                        }
-                        intent.putExtra("PID", Integer.parseInt(pid));
-                        intent.putExtra("tabPosition", Integer.parseInt(tabPosition));
-                        intent.putExtra("slidePosition", Integer.parseInt(slidePosition));
-                        intent.putExtra("three60Position", Integer.parseInt(three60Position));
-                        Log.e("startacti","startacti");
-                        startActivity(intent);
-                        finish();
+            //Setup folders, get counts and download all the images from Parse if needed
+            foldersAndCount();
+        }
+
+    }
+
+    public void setFirebaseListeners(String s) {
+        if (checkConnection()) {
+            Firebase ref = new Firebase("https://smartdemo.firebaseio.com/1234");
+            ref.removeValue();
+
+            //Firebase Listener for PID
+            ref.child("pid").addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                    Toast.makeText(FirstActivity.this,"pid",Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
+                    String[] parts;
+                    String pid = "", tabPosition = "", slidePosition = "", three60Position = "";
+                    try {
+                        parts = snapshot.getValue().toString().split(";");
+                        pid = parts[0];
+                        tabPosition = parts[1];
+                        slidePosition = parts[2];
+                        three60Position = parts[3];
+                    } catch (Exception e) {
+                        tabPosition = "777";
+                        slidePosition = "777";
+                        three60Position = "777";
                     }
-                    @Override
-                    public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onChildRemoved(DataSnapshot snapshot) {}
-                    @Override
-                    public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {}
-                });
+                    intent.putExtra("PID", Integer.parseInt(pid));
+                    intent.putExtra("tabPosition", Integer.parseInt(tabPosition));
+                    intent.putExtra("slidePosition", Integer.parseInt(slidePosition));
+                    intent.putExtra("three60Position", Integer.parseInt(three60Position));
+                    startActivity(intent);
+                    finish();
+                }
 
+                @Override
+                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onChildRemoved(DataSnapshot snapshot) {}
+                @Override
+                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {}
+            });
+
+
+            if (s.equals("pid")) {
 
                 //Firebase Listener for Change of Tab
                 ref.child("tab").addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot snapshot) {
                         try {
+                            Toast.makeText(FirstActivity.this,"tab",Toast.LENGTH_SHORT).show();
                             new Thread(new Task_TAB(snapshot.getValue().toString())).start();
                         } catch (NullPointerException e) {
                         }
@@ -219,6 +193,7 @@ public class FirstActivity extends ActionBarActivity{
                     @Override
                     public void onDataChange(DataSnapshot snapshot) {
                         try {
+                            Toast.makeText(FirstActivity.this,"ss",Toast.LENGTH_SHORT).show();
                             new Thread(new Task_SS(snapshot.getValue().toString())).start();
                         } catch (NullPointerException e) {
                         }
@@ -235,14 +210,14 @@ public class FirstActivity extends ActionBarActivity{
                 ref.child("video").child("id").addChildEventListener(new ChildEventListener() {
                     @Override
                     public synchronized void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                        try{
-                            if(flag){
-                                new Thread(new Task_V(snapshot.getValue().toString())).start();
-                                Log.e("VIDEO","VIDEO");
-                            }
-                            flag=!flag;
-                        }catch(NullPointerException e){}
+                        try {
+                            Toast.makeText(FirstActivity.this,"vid",Toast.LENGTH_SHORT).show();
+                            new Thread(new Task_V(snapshot.getValue().toString())).start();
+                            Log.e("VIDEO", "VIDEO");
+                        } catch (NullPointerException e) {
+                        }
                     }
+
                     @Override
                     public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
                     @Override
@@ -254,14 +229,15 @@ public class FirstActivity extends ActionBarActivity{
                 });
 
 
-
                 //Firebase Listener for onBackPressed
                 ref.child("video").child("back").addChildEventListener(new ChildEventListener() {
                     @Override
                     public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                        Toast.makeText(FirstActivity.this,"back",Toast.LENGTH_SHORT).show();
                         finishActivity(VIDEO_ACTIVITY_REQUEST_CODE);
                         //finishActivity(VIDEO_ACTIVITY_REQUEST_CODE-1);
                     }
+
                     @Override
                     public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
                     @Override
@@ -279,6 +255,7 @@ public class FirstActivity extends ActionBarActivity{
                     public synchronized void onChildAdded(DataSnapshot dataSnapshot, String s) {
                         new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
                     }
+
                     @Override
                     public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
                     @Override
@@ -289,14 +266,7 @@ public class FirstActivity extends ActionBarActivity{
                     public void onCancelled(FirebaseError firebaseError) {}
                 });
             }
-
-            db=openOrCreateDatabase("smartdemo.db", SQLiteDatabase.CREATE_IF_NECESSARY, null);
-            createTables();
-
-            //Setup folders, get counts and download all the images from Parse if needed
-            foldersAndCount();
         }
-
     }
 
     class Task_TAB implements Runnable {
@@ -478,16 +448,17 @@ public class FirstActivity extends ActionBarActivity{
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_360, container, false);
             imageview=(ImageView)rootView.findViewById(R.id.three60ImageView);
-            //Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");;
             Bitmap bitmap;
+            /*
             BitmapFactory.Options options=new BitmapFactory.Options();
             options.inSampleSize = 4;
+            */
             if(three60Position!=777){
-                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+three60Position+".jpg",options);
+                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+three60Position+".jpg");
                 three60Position=777;
             }
             else{
-                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg",options);
+                bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/360/"+PID+"_"+currentimagenumber+".jpg");
             }
             imageview.setImageBitmap(bitmap);
             imageview.setOnTouchListener(this);
@@ -1098,7 +1069,10 @@ public class FirstActivity extends ActionBarActivity{
                         public void done(byte[] bytes, com.parse.ParseException e) {
                             if (e == null) {
                                 writeFile_firstPage(bytes, "default.jpg");
-                                    pd.dismiss();
+                                pd.dismiss();
+                                ImageView imageView = (ImageView)findViewById(R.id.firstScreenImageView);
+                                Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + File.separator + "showcommerce/default.jpg");
+                                imageView.setImageBitmap(bitmap);
                             } else {
                                 Log.e("Something went wrong", "Something went wrong");
                             }
