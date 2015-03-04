@@ -308,51 +308,51 @@ public class MainActivity extends ActionBarActivity implements View.OnTouchListe
 
     class DownloadFileAsync extends AsyncTask<String, String, String> {
 
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(String... aurl) {
+            int count;
+            try {
+                URL url = new URL(aurl[0]);
+                String filename = aurl[1];
+                URLConnection conexion = url.openConnection();
+                conexion.connect();
+                int lenghtOfFile = conexion.getContentLength();
+                InputStream input = new BufferedInputStream(url.openStream());
+                OutputStream output = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p"+PID+"/" + filename);
+
+                byte data[] = new byte[512];
+                long total = 0;
+                while ((count = input.read(data)) != -1) {
+                    total += count;
+                    publishProgress("" + (int) ((total * 100) / lenghtOfFile));
+                    output.write(data, 0, count);
+                }
+                output.flush();
+                output.close();
+                input.close();
+
             }
-
-            @Override
-            protected String doInBackground(String... aurl) {
-                int count;
-                try {
-                    URL url = new URL(aurl[0]);
-                    String filename = aurl[1];
-                    URLConnection conexion = url.openConnection();
-                    conexion.connect();
-                    int lenghtOfFile = conexion.getContentLength();
-                    InputStream input = new BufferedInputStream(url.openStream());
-                    OutputStream output = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p"+PID+"/" + filename);
-
-                    byte data[] = new byte[512];
-                    long total = 0;
-                    while ((count = input.read(data)) != -1) {
-                        total += count;
-                        publishProgress("" + (int) ((total * 100) / lenghtOfFile));
-                        output.write(data, 0, count);
-                    }
-                    output.flush();
-                    output.close();
-                    input.close();
-
-                }
-                catch(Exception e){
-                    File file = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/" + aurl[1]);
-                    file.delete();
-                }
-                return null;
+            catch(Exception e){
+                File file = new File(Environment.getExternalStorageDirectory() + "/showcommerce/p"+PID+"/" + aurl[1]);
+                file.delete();
             }
+            return null;
+        }
 
-            @Override
-            protected synchronized void onPostExecute(String unused) {
-                CURR_COUNT++;
-                if(CURR_COUNT==COUNT){
-                    Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/"+PID+"_"+currentimagenumber+".jpg");
-                    imageview.setImageBitmap(bmp);
-                    imageview.setOnTouchListener(MainActivity.this);
-                    dialog.dismiss();
-                }
+        @Override
+        protected synchronized void onPostExecute(String unused) {
+            CURR_COUNT++;
+            if(CURR_COUNT==COUNT){
+                Bitmap bmp = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/"+PID+"_"+currentimagenumber+".jpg");
+                imageview.setImageBitmap(bmp);
+                imageview.setOnTouchListener(MainActivity.this);
+                dialog.dismiss();
             }
         }
+    }
 }

@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.Image;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
@@ -13,6 +14,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -40,8 +42,16 @@ public class YoutubeActivity extends FragmentActivity {
             getSupportFragmentManager().beginTransaction().replace(R.id.myContainer, myFragment).commit();
             myFragment.init();
         } else {
+
+            LinearLayout llmain=new LinearLayout(this);
+            llmain.setOrientation(LinearLayout.VERTICAL);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity=Gravity.CENTER;
+            llmain.setLayoutParams(params);
+            llmain.setGravity(Gravity.CENTER);
+
             LinearLayout ll = new LinearLayout(this);
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER;
             ll.setLayoutParams(params);
             Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + "/showcommerce/p" + Connection.PID + "/video/" + Connection.PID + "_" + pos + ".jpg");
@@ -54,24 +64,22 @@ public class YoutubeActivity extends FragmentActivity {
             ImageView imageView = new ImageView(this);
             LinearLayout.LayoutParams params1 = new LinearLayout.LayoutParams(100, 100);
             imageView.setLayoutParams(params1);
-            imageView.setImageResource(R.drawable.play);
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("playing");
-                }
-            });
-            ll.addView(imageView);
-
-            imageView = new ImageView(this);
-            params1 = new LinearLayout.LayoutParams(100, 100);
-            params1.setMargins(20, 0, 0, 0);
-            imageView.setLayoutParams(params1);
+            imageView.setTag("pause");
             imageView.setImageResource(R.drawable.pause);
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("paused");
+                    if(view.getTag().toString().equals("pause")){
+                        if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("paused");
+                        ImageView temp=(ImageView)view;
+                        temp.setImageResource(R.drawable.play);
+                        temp.setTag("play");
+                    }else{
+                        if(Connection.CONNECTED)Connection.ref.child("video").child("playback").push().setValue("playing");
+                        ImageView temp=(ImageView)view;
+                        temp.setImageResource(R.drawable.pause);
+                        temp.setTag("pause");
+                    }
                 }
             });
             ll.addView(imageView);
@@ -90,6 +98,7 @@ public class YoutubeActivity extends FragmentActivity {
                 }
             });
             ll.addView(imageView);
+            llmain.addView(ll);
 
             SeekBar seekBar=new SeekBar(this);
             LinearLayout.LayoutParams sblp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
@@ -98,18 +107,21 @@ public class YoutubeActivity extends FragmentActivity {
             seekBar.setLayoutParams(sblp);
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
-                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {}
+                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                }
+
                 @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {}
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                }
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    Log.e("SEEK BAR PROGRESS",String.valueOf(seekBar.getProgress()));
+                    Log.e("SEEK BAR PROGRESS", String.valueOf(seekBar.getProgress()));
                 }
             });
+            llmain.addView(seekBar);
 
-            fl.addView(ll);
-            fl.addView(seekBar);
+            fl.addView(llmain);
         }
     }
 
