@@ -14,6 +14,7 @@ import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -56,10 +57,9 @@ public class GalleryActivity extends ActionBarActivity {
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
 
         for (int i=0 ; i<filelist.length ; ++i){
-            Log.e("YO YO YO YO", filelist[i].getPath());
             if(i==0 || i%3==0){
                 ll = new LinearLayout(this);
-                params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params = new LinearLayout.LayoutParams((int)getResources().getDimension(R.dimen.n320), ViewGroup.LayoutParams.WRAP_CONTENT);
                 params.setMargins(0,n10,0,n10);
                 ll.setLayoutParams(params);
                 ll.setOrientation(LinearLayout.HORIZONTAL);
@@ -102,12 +102,8 @@ public class GalleryActivity extends ActionBarActivity {
                         //'dd' - latest photo date from sqlite
                         Date dd = dateFormat.parse(currentlatesttime);
                         if(dd.toString().equals(d.toString())){
-                            Toast.makeText(GalleryActivity.this,"equals",Toast.LENGTH_LONG).show();
-                            Log.e("LPD FROM SQLITE", dd.toString());
                             displayThumbnails();
                         }else{
-                            Toast.makeText(GalleryActivity.this,"before",Toast.LENGTH_LONG).show();
-                            Log.e("LPD FROM SQLITE", dd.toString());
 
                             for(final ParseObject o : objects){
                                 if(o.getCreatedAt().toString().equals(currentlatesttime)) break;
@@ -130,6 +126,7 @@ public class GalleryActivity extends ActionBarActivity {
 
         }else{
             Toast.makeText(this, "Check your Internet Connection!", Toast.LENGTH_LONG).show();
+            displayThumbnails();
         }
 
     }
