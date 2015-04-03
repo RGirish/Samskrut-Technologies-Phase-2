@@ -94,6 +94,7 @@ public class YoutubeActivity extends FragmentActivity {
                 public void onClick(View view) {
                     if(Connection.CONNECTED)Connection.ref.child("video").child("back").push().setValue("yeah");
                     if(Connection.CONNECTED)Connection.ref.child("video").child("playback").removeValue();
+                    if(Connection.CONNECTED)Connection.ref.child("video").child("seek").removeValue();
                     finish();
                 }
             });
@@ -116,7 +117,7 @@ public class YoutubeActivity extends FragmentActivity {
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    Log.e("SEEK BAR PROGRESS", String.valueOf(seekBar.getProgress()));
+                    if(Connection.CONNECTED) Connection.ref.child("video").child("seek").push().setValue(String.valueOf(seekBar.getProgress()));
                 }
             });
             llmain.addView(seekBar);
@@ -128,6 +129,7 @@ public class YoutubeActivity extends FragmentActivity {
     public void onBackPressed(){
         if(Connection.CONNECTED)Connection.ref.child("video").child("back").push().setValue("yeah");
         if(Connection.CONNECTED)Connection.ref.child("video").child("playback").removeValue();
+        if(Connection.CONNECTED)Connection.ref.child("video").child("seek").removeValue();
         super.onBackPressed();
     }
 

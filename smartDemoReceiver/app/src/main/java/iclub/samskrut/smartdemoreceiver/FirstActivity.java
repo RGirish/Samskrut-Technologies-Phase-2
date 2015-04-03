@@ -4,6 +4,7 @@ package iclub.samskrut.smartdemoreceiver;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
@@ -82,7 +83,6 @@ public class FirstActivity extends ActionBarActivity{
     public static int NO_360,NO_SS,NO_V,VIDEO_ACTIVITY_REQUEST_CODE;
     public static ActionBar actionBar;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,6 +93,8 @@ public class FirstActivity extends ActionBarActivity{
         Firebase.setAndroidContext(this);
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "28rzQwSoD7MFQOOViu9awAI0giaUDK8E7ADYbXAz", "jbYQAqhT1jcRiIUrS3UwuFuFOipjv04kUYhZpkEN");
+
+        setFirebaseListeners();
 
         Intent intent=getIntent();
         PID = intent.getIntExtra("PID",-10);
@@ -106,15 +108,12 @@ public class FirstActivity extends ActionBarActivity{
             ImageView imageView = (ImageView)findViewById(R.id.firstScreenImageView);
             Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + File.separator + "showcommerce/default.jpg");
             imageView.setImageBitmap(bitmap);
-            setFirebaseListeners("nopid");
         }
         else{
             tabPosition = intent.getIntExtra("tabPosition",777);
             slidePosition = intent.getIntExtra("slidePosition",777);
             three60Position = intent.getIntExtra("three60Position",777);
             ob=new TheClass();
-
-            setFirebaseListeners("pid");
 
             db=openOrCreateDatabase("smartdemo.db", SQLiteDatabase.CREATE_IF_NECESSARY, null);
             createTables();
@@ -125,16 +124,15 @@ public class FirstActivity extends ActionBarActivity{
 
     }
 
-    public void setFirebaseListeners(String s) {
+    public void setFirebaseListeners() {
         if (checkConnection()) {
-            Firebase ref = new Firebase("https://smartdemo.firebaseio.com/1234");
-            ref.removeValue();
+            FirebaseListeners.ref = new Firebase("https://smartdemo.firebaseio.com/1234");
+            FirebaseListeners.ref.removeValue();
 
             //Firebase Listener for PID
-            ref.child("pid").addChildEventListener(new ChildEventListener() {
+            FirebaseListeners.pidChildEventListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                    Toast.makeText(FirstActivity.this,"pid",Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(FirstActivity.this, FirstActivity.class);
                     String[] parts;
                     String pid = "", tabPosition = "", slidePosition = "", three60Position = "";
@@ -165,107 +163,105 @@ public class FirstActivity extends ActionBarActivity{
                 public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
                 @Override
                 public void onCancelled(FirebaseError firebaseError) {}
-            });
+            };
+
+            FirebaseListeners.ref.child("pid").addChildEventListener(FirebaseListeners.pidChildEventListener);
 
 
-            if (s.equals("pid")) {
 
-                //Firebase Listener for Change of Tab
-                ref.child("tab").addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot snapshot) {
-                        try {
-                            Toast.makeText(FirstActivity.this,"tab",Toast.LENGTH_SHORT).show();
-                            new Thread(new Task_TAB(snapshot.getValue().toString())).start();
-                        } catch (NullPointerException e) {
-                        }
+            //Firebase Listener for Change of Tab
+            FirebaseListeners.tabValueEventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    try {
+                        new Thread(new Task_TAB(snapshot.getValue().toString())).start();
+                    } catch (NullPointerException e) {
                     }
+                }
 
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {
-                        Log.e("ERROR at onCancelled()", firebaseError.getMessage());
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    Log.e("ERROR at onCancelled()", firebaseError.getMessage());
+                }
+            };
+            FirebaseListeners.ref.child("tab").addValueEventListener(FirebaseListeners.tabValueEventListener);
+
+
+            //Firebase Listener for Slideshow
+            FirebaseListeners.ssValueEventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    try {
+                        new Thread(new Task_SS(snapshot.getValue().toString())).start();
+                    } catch (NullPointerException e) {
                     }
-                });
+                }
+
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    Log.e("ERROR at onCancelled()", firebaseError.getMessage());
+                }
+            };
+            FirebaseListeners.ref.child("ss").addValueEventListener(FirebaseListeners.ssValueEventListener);
 
 
-                //Firebase Listener for Slideshow
-                ref.child("ss").addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot snapshot) {
-                        try {
-                            Toast.makeText(FirstActivity.this,"ss",Toast.LENGTH_SHORT).show();
-                            new Thread(new Task_SS(snapshot.getValue().toString())).start();
-                        } catch (NullPointerException e) {
-                        }
+            //Firebase Listener for Video
+            FirebaseListeners.vidChildEventListener = new ChildEventListener() {
+                @Override
+                public synchronized void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                    try {
+                        new Thread(new Task_V(snapshot.getValue().toString())).start();
+                    } catch (NullPointerException e) {
                     }
+                }
 
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {
-                        Log.e("ERROR at onCancelled()", firebaseError.getMessage());
-                    }
-                });
-
-
-                //Firebase Listener for Video
-                ref.child("video").child("id").addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public synchronized void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                        try {
-                            Toast.makeText(FirstActivity.this,"vid",Toast.LENGTH_SHORT).show();
-                            new Thread(new Task_V(snapshot.getValue().toString())).start();
-                            Log.e("VIDEO", "VIDEO");
-                        } catch (NullPointerException e) {
-                        }
-                    }
-
-                    @Override
-                    public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onChildRemoved(DataSnapshot snapshot) {}
-                    @Override
-                    public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {}
-                });
+                @Override
+                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onChildRemoved(DataSnapshot snapshot) {}
+                @Override
+                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {}
+            };
+            FirebaseListeners.ref.child("video").child("id").addChildEventListener(FirebaseListeners.vidChildEventListener);
 
 
-                //Firebase Listener for onBackPressed
-                ref.child("video").child("back").addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
-                        Toast.makeText(FirstActivity.this,"back",Toast.LENGTH_SHORT).show();
-                        finishActivity(VIDEO_ACTIVITY_REQUEST_CODE);
-                        //finishActivity(VIDEO_ACTIVITY_REQUEST_CODE-1);
-                    }
+            //Firebase Listener for onBackPressed
+            /*ref.child("video").child("back").addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                    finishActivity(VIDEO_ACTIVITY_REQUEST_CODE);
+                }
 
-                    @Override
-                    public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onChildRemoved(DataSnapshot snapshot) {}
-                    @Override
-                    public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {}
-                });
+                @Override
+                public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onChildRemoved(DataSnapshot snapshot) {}
+                @Override
+                public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {}
+            });*/
 
-                //Firebase Listener for 360 View
-                ref.child("360").addChildEventListener(new ChildEventListener() {
+            //Firebase Listener for 360 View
+            FirebaseListeners.three60ChildEventListener = new ChildEventListener() {
 
-                    @Override
-                    public synchronized void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                        new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
-                    }
+                @Override
+                public synchronized void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    new Thread(new Task_360(dataSnapshot.getValue().toString())).start();
+                }
 
-                    @Override
-                    public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-                    @Override
-                    public void onChildRemoved(DataSnapshot dataSnapshot) {}
-                    @Override
-                    public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-                    @Override
-                    public void onCancelled(FirebaseError firebaseError) {}
-                });
-            }
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {}
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {}
+            };
+            FirebaseListeners.ref.child("360").addChildEventListener(FirebaseListeners.three60ChildEventListener);
         }
     }
 
@@ -336,10 +332,12 @@ public class FirstActivity extends ActionBarActivity{
         public synchronized void send_v(final String s){
             runOnUiThread(new Runnable(){
                 public void run() {
-                    VIDEO_ACTIVITY_REQUEST_CODE++;
-                    Intent intent=new Intent(FirstActivity.this,YoutubeActivity.class);
-                    intent.putExtra("videoid",s);
-                    startActivityForResult(intent,VIDEO_ACTIVITY_REQUEST_CODE);
+                    Toast.makeText(FirstActivity.this,"Video",Toast.LENGTH_SHORT).show();
+                    //VIDEO_ACTIVITY_REQUEST_CODE++;
+                    Intent intent = new Intent(FirstActivity.this,YoutubeActivity.class);
+                    intent.putExtra("videoid", s);
+                    startActivity(intent);
+                    //startActivityForResult(intent,VIDEO_ACTIVITY_REQUEST_CODE);
                 }
             });
         }
@@ -363,7 +361,7 @@ public class FirstActivity extends ActionBarActivity{
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
         mPager = (MyViewPager) findViewById(R.id.pager_main);
-        mPager.setSwipeable(false);
+        mPager.setSwipeable(true);
         mPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int i, float v, int i2) {}
@@ -613,7 +611,8 @@ public class FirstActivity extends ActionBarActivity{
                     ll.setGravity(Gravity.CENTER);
                 }
                 ImageView iv=new ImageView(getActivity());
-                params=new LinearLayout.LayoutParams(width/2-10, (width/2-10)*2/3);
+                if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) params=new LinearLayout.LayoutParams(width/2-10, (width/2-10)*2/3);
+                else params=new LinearLayout.LayoutParams(width/3-50, (width/3-50)*2/3);
                 params.setMargins(5,5,5,5);
                 iv.setLayoutParams(params);
                 Bitmap bitmap=BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString()+"/showcommerce/p"+PID+"/video/"+PID+"_"+i+".jpg");
@@ -737,15 +736,12 @@ public class FirstActivity extends ActionBarActivity{
                                                     dialog0.dismiss();
                                                     downloadEverything();
                                                     setupTabs();
-                                                } else {
                                                 }
                                             }
                                         });
-                                    } else {
                                     }
                                 }
                             });
-                        } else {
                         }
                     }
                 });

@@ -3,6 +3,7 @@ package iclub.samskrut.smartdemoreceiver;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
@@ -14,7 +15,6 @@ import com.google.android.youtube.player.YouTubePlayerSupportFragment;
 public class YoutubeActivity extends FragmentActivity {
 
     public static String videoId;
-    public static Firebase ref;
     public static TheClass ob;
     public static YouTubePlayer activePlayer;
 
@@ -26,9 +26,26 @@ public class YoutubeActivity extends FragmentActivity {
         Intent intent=getIntent();
         videoId=intent.getStringExtra("videoid");
 
-
         ob=new TheClass();
-        ref=new Firebase("https://smartdemo.firebaseio.com/1234");
+
+        Firebase ref = new Firebase("https://smartdemo.firebaseio.com/1234");
+
+        ref.child("video").child("back").addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                finish();
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+            @Override
+            public void onChildRemoved(DataSnapshot snapshot) {}
+            @Override
+            public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {}
+        });
+
         ref.child("video").child("playback").addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
@@ -36,6 +53,26 @@ public class YoutubeActivity extends FragmentActivity {
                     new Thread(new Task(snapshot.getValue().toString())).start();
                 }catch(NullPointerException e){}
             }
+
+            @Override
+            public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
+            @Override
+            public void onChildRemoved(DataSnapshot snapshot) {}
+            @Override
+            public void onChildChanged(DataSnapshot snapshot, String previousChildKey) {}
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {}
+        });
+
+
+        ref.child("video").child("seek").addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot snapshot, String previousChildKey) {
+                try{
+                    new Thread(new Task_Seek(snapshot.getValue().toString())).start();
+                }catch(NullPointerException e){}
+            }
+
             @Override
             public void onChildMoved(DataSnapshot snapshot, String previousChildKey) {}
             @Override
@@ -63,6 +100,17 @@ public class YoutubeActivity extends FragmentActivity {
         }
     }
 
+    class Task_Seek implements Runnable {
+        String s;
+        Task_Seek(String parameter){
+            s=parameter;
+        }
+        @Override
+        public void run() {
+            ob.setSeek(s);
+        }
+    }
+
     class TheClass{
 
         public synchronized void setPlayback(final String s){
@@ -73,6 +121,19 @@ public class YoutubeActivity extends FragmentActivity {
                     }else if(s.equals("paused")) {
                         activePlayer.pause();
                     }
+                }
+            });
+        }
+
+        public synchronized void setSeek(final String s){
+            runOnUiThread(new Runnable(){
+                public void run() {
+                    int pc = Integer.parseInt(s);
+                    double time = (pc) * (activePlayer.getDurationMillis()/100);
+                    Log.e("S", s);
+                    Log.e("time",String.valueOf(time));
+                    Log.e("duration",String.valueOf(activePlayer.getDurationMillis()));
+                    activePlayer.seekToMillis((int)time);
                 }
             });
         }
