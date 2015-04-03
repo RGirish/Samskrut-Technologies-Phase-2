@@ -1,0 +1,84 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="#fff"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:background="@android:drawable/dialog_holo_light_frame"
+        android:gravity="center"
+        android:layout_marginRight="-50dp"
+        android:layout_marginLeft="-50dp"
+        android:layout_marginTop="-10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:background="#00BCD4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="40dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:text="Gallery Upload"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginLeft="60dp"
+                android:textColor="#fff"
+                android:shadowRadius="2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:text="Upload photos to Cloud!"
+                android:textSize="16sp"
+                android:layout_marginLeft="60dp"
+                android:textColor="#fff"
+                android:shadowRadius="2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <Button
+        android:layout_gravity="center"
+        android:text="Upload"
+        android:padding="10dp"
+        android:textSize="15sp"
+        android:textColor="#fff"
+        android:background="@drawable/selector_orange"
+        android:onClick="onClickUpload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:layout_gravity="center"
+        android:background="@drawable/selector_orange"
+        android:text="Gallery"
+        android:padding="10dp"
+        android:textSize="15sp"
+        android:textColor="#fff"
+        android:onClick="onClickGallery"
+        android:layout_marginTop="100dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <ImageButton
+        android:id="@+id/fab"
+        android:layout_width="@dimen/round_button_diameter"
+        android:layout_height="@dimen/round_button_diameter"
+        android:layout_gravity="right|bottom"
+        android:layout_marginBottom="@dimen/add_button_margin"
+        android:layout_marginEnd="@dimen/add_button_margin"
+        android:onClick="onClickNew"
+        android:tint="#fff"
+        android:src="@drawable/plus"
+        android:background="@drawable/fab_selector"
+        tools:ignore="RtlCompat" />
+
+</FrameLayout>
