@@ -14,14 +14,12 @@ import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import com.parse.FindCallback;
-import com.parse.GetDataCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
@@ -38,7 +36,7 @@ public class GalleryActivity extends ActionBarActivity {
 
     ProgressDialog dialog1;
     SQLiteDatabase db;
-    int COUNT=0,TOTAL=0,n10;
+    int n10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,13 +49,16 @@ public class GalleryActivity extends ActionBarActivity {
 
     public void displayThumbnails(){
         File dir = new File(Environment.getExternalStorageDirectory() + "/galleryandupload");
-        File[] filelist = dir.listFiles();
+        final File[] filelist= dir.listFiles();
         LinearLayout.LayoutParams params;
-        LinearLayout ll=null;
+        LinearLayout ll=new LinearLayout(this);
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
 
-        for (int i=0 ; i<filelist.length ; ++i){
-            if(i==0 || i%3==0){
+        int count=0;
+        for ( int i=filelist.length-1 ; i>=1 ; --i ){
+            final int i2=i;
+
+            if(count==0 || count%3==0){
                 ll = new LinearLayout(this);
                 params = new LinearLayout.LayoutParams((int)getResources().getDimension(R.dimen.n320), ViewGroup.LayoutParams.WRAP_CONTENT);
                 params.setMargins(0,n10,0,n10);
@@ -67,59 +68,105 @@ public class GalleryActivity extends ActionBarActivity {
             }
             ImageView imageView = new ImageView(this);
             params= new LinearLayout.LayoutParams((int)getResources().getDimension(R.dimen.photo_height),(int)getResources().getDimension(R.dimen.photo_height));
-            if(i==1 || (i-1)%3==0){
+            if(count==1 || (count-1)%3==0){
                 params.setMargins(n10,0,n10,0);
             }
             imageView.setLayoutParams(params);
             Bitmap bitmap = BitmapFactory.decodeFile(filelist[i].getPath());
+            Log.e("PATTHHHHHHH",filelist[i].getPath());
             imageView.setImageBitmap(bitmap);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(GalleryActivity.this, ImagesSlideshow.class);
+                    intent.putExtra("page", i2);
+                    intent.putExtra("total", filelist.length-1);
+                    Toast.makeText(GalleryActivity.this, String.valueOf(i2), Toast.LENGTH_LONG).show();
+                    startActivity(intent);
+                }
+            });
             ll.addView(imageView);
+            count++;
         }
     }
+
 
     public void downloadLatestThumbnails(){
         File folder = new File(Environment.getExternalStorageDirectory() + "/galleryandupload");
         if (!folder.exists()) {
             folder.mkdir();
         }
+        File folder2 = new File(Environment.getExternalStorageDirectory() + "/galleryandupload/large");
+        if (!folder2.exists()) {
+            folder2.mkdir();
+        }
 
         if (checkConnection()){
             dialog1 = ProgressDialog.show(this, null, "Just a moment...", true);
             final ParseQuery<ParseObject> query = ParseQuery.getQuery("PhotoTable");
-            query.addDescendingOrder("createdAt");
+            //query.addDescendingOrder("createdAt");
+            query.addAscendingOrder("createdAt");
             query.findInBackground(new FindCallback<ParseObject>() {
                 @Override
                 public void done(List<ParseObject> objects, ParseException e) {
-                    ParseObject firstObject = objects.get(0);
+                    ParseObject lastObject = objects.get(objects.size()-1);
                     //'d' - latest photo date from Parse
-                    Date d = firstObject.getCreatedAt();
-                    Log.e("LPD FROM PARSE", d.toString());
+                    Date d = lastObject.getCreatedAt();
                     Cursor cursor = db.rawQuery("SELECT thetime FROM latestphototime;",null);
                     cursor.moveToFirst();
                     String currentlatesttime = cursor.getString(0);
                     DateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.US);
-                    try{
                         //'dd' - latest photo date from sqlite
-                        Date dd = dateFormat.parse(currentlatesttime);
+                    Date dd=null;
+                    try{dd = dateFormat.parse(currentlatesttime);}catch (Exception ee){}
                         if(dd.toString().equals(d.toString())){
                             displayThumbnails();
+                            Toast.makeText(GalleryActivity.this,"equals",Toast.LENGTH_LONG).show();
                         }else{
+                            Toast.makeText(GalleryActivity.this,"not equals",Toast.LENGTH_LONG).show();
+                            File dir = new File(Environment.getExternalStorageDirectory() + "/galleryandupload");
+                            File[] filelist = dir.listFiles();
+                            int pos = filelist.length;
 
-                            for(final ParseObject o : objects){
-                                if(o.getCreatedAt().toString().equals(currentlatesttime)) break;
-                                ParseFile myFile = o.getParseFile("pic_thumbnail");
-                                byte[] data = myFile.getData();
-                                String fn = Long.toString(System.currentTimeMillis()) + ".jpg";
-                                writeFile(data, fn);
+                            if(filelist.length==1) {
+                                for (int i = 0; i < objects.size(); ++i) {
+                                    if (objects.get(i).getCreatedAt().toString().equals(currentlatesttime)) {
+                                        break;
+                                    }
+                                    ParseFile myFile = objects.get(i).getParseFile("pic_thumbnail");
+                                    byte[] data = null;
+                                    try {
+                                        data = myFile.getData();
+                                    } catch (Exception eee) {
+                                    }
+                                    String fn = String.valueOf(pos) + "_th.jpg";
+                                    pos++;
+                                    writeFile(data, fn);
+                                }
+                            }else{
+                                for (int i = objects.size()-1; i >=0 ; --i) {
+                                    if (objects.get(i).getCreatedAt().toString().equals(currentlatesttime)) {
+                                        break;
+                                    }
+                                    ParseFile myFile = objects.get(i).getParseFile("pic_thumbnail");
+                                    byte[] data = null;
+                                    try {
+                                        data = myFile.getData();
+                                    } catch (Exception eee) {
+                                    }
+                                    String fn = String.valueOf(pos) + "_th.jpg";
+                                    pos++;
+                                    writeFile(data, fn);
+                                }
                             }
-                            displayThumbnails();
 
+                            displayThumbnails();
                             db.execSQL("UPDATE latestphototime SET thetime='" + d.toString() + "';");
                         }
 
                         //One more case left out. When some row is deleted from Parse db, the latest date stored locally could be AFTER the latest date from Parse in which case we will have to delete a couple of photos from the local storage.
 
-                    }catch (Exception exc){}
+
                     dialog1.dismiss();
                 }
             });
