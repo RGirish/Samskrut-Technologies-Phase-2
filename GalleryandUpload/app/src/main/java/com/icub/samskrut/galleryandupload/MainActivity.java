@@ -88,9 +88,9 @@ public class MainActivity extends ActionBarActivity {
 
             if(all_path.length>0) {
                 if (checkConnection()){
-                    dialog = ProgressDialog.show(this, null, "Uploading...", true);
                     TOTAL = all_path.length;
                     COUNT=0;
+                    dialog = ProgressDialog.show(this, null, "Uploading 1/" + TOTAL, true);
                     for (String string : all_path) {
                         Bitmap bitmap = BitmapFactory.decodeFile(string);
                         String[] parts = string.split("/");
@@ -109,6 +109,8 @@ public class MainActivity extends ActionBarActivity {
                                         COUNT++;
                                         if (COUNT == TOTAL) {
                                             if (checkConnection()) dialog.dismiss();
+                                        }else{
+                                            if (checkConnection()) dialog.setMessage("Uploading "+(COUNT+1)+"/"+TOTAL);
                                         }
                                     }
                                 });

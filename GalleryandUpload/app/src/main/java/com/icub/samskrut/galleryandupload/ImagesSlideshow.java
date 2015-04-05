@@ -31,7 +31,7 @@ public class ImagesSlideshow extends ActionBarActivity {
         TOTAL = intent.getIntExtra("total", 0);
         int page = TOTAL - intent.getIntExtra("page", 0);
 
-        ViewPager mPager = (ViewPager) findViewById(R.id.slideshowViewPager);
+        final ViewPager mPager = (ViewPager) findViewById(R.id.slideshowViewPager);
         final ViewPager.SimpleOnPageChangeListener mPageChangeListener = new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(final int position) {
@@ -50,6 +50,7 @@ public class ImagesSlideshow extends ActionBarActivity {
                                 String fn = (TOTAL-position) + ".jpg";
                                 writeFile(data, fn);
                                 dialog.dismiss();
+                                ImagesSlideshow.this.recreate();
                             } catch (Exception ex) {
                             }
                         }
