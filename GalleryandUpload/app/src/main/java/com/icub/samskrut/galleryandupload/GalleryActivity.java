@@ -81,7 +81,6 @@ public class GalleryActivity extends ActionBarActivity {
                     Intent intent = new Intent(GalleryActivity.this, ImagesSlideshow.class);
                     intent.putExtra("page", i2);
                     intent.putExtra("total", filelist.length-1);
-                    Toast.makeText(GalleryActivity.this, String.valueOf(i2), Toast.LENGTH_LONG).show();
                     startActivity(intent);
                 }
             });
@@ -109,7 +108,15 @@ public class GalleryActivity extends ActionBarActivity {
             query.findInBackground(new FindCallback<ParseObject>() {
                 @Override
                 public void done(List<ParseObject> objects, ParseException e) {
-                    ParseObject lastObject = objects.get(objects.size()-1);
+                    ParseObject lastObject=null;
+                    try {
+                        lastObject = objects.get(objects.size() - 1);
+                    }catch(ArrayIndexOutOfBoundsException ex){
+                        Toast.makeText(GalleryActivity.this, "No images in Cloud!", Toast.LENGTH_LONG).show();
+                        dialog1.dismiss();
+                        GalleryActivity.this.finish();
+                        return;
+                    }
                     //'d' - latest photo date from Parse
                     Date d = lastObject.getCreatedAt();
                     Cursor cursor = db.rawQuery("SELECT thetime FROM latestphototime;",null);
@@ -121,9 +128,7 @@ public class GalleryActivity extends ActionBarActivity {
                     try{dd = dateFormat.parse(currentlatesttime);}catch (Exception ee){}
                         if(dd.toString().equals(d.toString())){
                             displayThumbnails();
-                            Toast.makeText(GalleryActivity.this,"equals",Toast.LENGTH_LONG).show();
                         }else{
-                            Toast.makeText(GalleryActivity.this,"not equals",Toast.LENGTH_LONG).show();
                             File dir = new File(Environment.getExternalStorageDirectory() + "/galleryandupload");
                             File[] filelist = dir.listFiles();
                             int pos = filelist.length;
@@ -144,7 +149,23 @@ public class GalleryActivity extends ActionBarActivity {
                                     writeFile(data, fn);
                                 }
                             }else{
-                                for (int i = objects.size()-1; i >=0 ; --i) {
+                                boolean flag = true;
+                                for (int i = 0; i < objects.size(); ++i) {
+                                    if(flag && objects.get(i).getCreatedAt().toString().equals(currentlatesttime)){
+                                        flag=false;
+                                    }else if(!flag){
+                                        ParseFile myFile = objects.get(i).getParseFile("pic_thumbnail");
+                                        byte[] data = null;
+                                        try {
+                                            data = myFile.getData();
+                                        } catch (Exception eee) {}
+                                        String fn = String.valueOf(pos) + "_th.jpg";
+                                        pos++;
+                                        writeFile(data, fn);
+                                    }
+                                }
+
+                                /*for (int i = objects.size()-1; i >=0 ; --i) {
                                     if (objects.get(i).getCreatedAt().toString().equals(currentlatesttime)) {
                                         break;
                                     }
@@ -157,7 +178,7 @@ public class GalleryActivity extends ActionBarActivity {
                                     String fn = String.valueOf(pos) + "_th.jpg";
                                     pos++;
                                     writeFile(data, fn);
-                                }
+                                }*/
                             }
 
                             displayThumbnails();
@@ -175,10 +196,6 @@ public class GalleryActivity extends ActionBarActivity {
             Toast.makeText(this, "Check your Internet Connection!", Toast.LENGTH_LONG).show();
             displayThumbnails();
         }
-
-    }
-
-    public void onClickRefresh(){
 
     }
 
