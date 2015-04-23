@@ -3,10 +3,11 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#fff">
-
+    
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="80dp"
+        android:translationZ="6dp"
         android:gravity="center"
         android:background="#4CAF50">
 
@@ -25,23 +26,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <ScrollView
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:orientation="vertical"
+            android:id="@+id/mainll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <LinearLayout
-                android:layout_marginTop="20dp"
-                android:gravity="center"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:orientation="vertical"
-                android:id="@+id/mainll"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+        </LinearLayout>
 
-            </LinearLayout>
-
-        </ScrollView>
+    </ScrollView>
 
     </android.support.v4.widget.SwipeRefreshLayout>
 
