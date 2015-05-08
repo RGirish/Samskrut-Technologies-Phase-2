@@ -2,6 +2,7 @@ package com.iclub.samskrut.omnipresence;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
@@ -34,6 +35,10 @@ import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+
+import org.rajawali3d.cardboard.RajawaliCardboardRenderer;
+import org.rajawali3d.cardboard.RajawaliCardboardView;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -198,7 +203,7 @@ public class ProjectList extends ActionBarActivity implements SwipeRefreshLayout
         try{
             cursor.moveToFirst();
             while(true){
-                int pos = cursor.getInt(0);
+                final int pos = cursor.getInt(0);
 
                 LinearLayout ll = new LinearLayout(this);
                 ll.setOrientation(LinearLayout.VERTICAL);
@@ -219,7 +224,9 @@ public class ProjectList extends ActionBarActivity implements SwipeRefreshLayout
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Toast.makeText(ProjectList.this, "Hello!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                        intent.putExtra("pos",pos);
+                        startActivity(intent);
                     }
                 });
                 ll.addView(imageButton);
