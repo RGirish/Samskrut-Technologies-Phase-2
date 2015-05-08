@@ -47,7 +47,8 @@ import java.util.List;
 
 public class ProjectList extends ActionBarActivity implements SwipeRefreshLayout.OnRefreshListener{
 
-    public SQLiteDatabase db;
+    public static SQLiteDatabase db;
+    public static int projectCount=0;
     ProgressDialog dialog1;
     SwipeRefreshLayout swipeLayout;
     int COUNT=0,CURR_COUNT=0;
@@ -203,6 +204,7 @@ public class ProjectList extends ActionBarActivity implements SwipeRefreshLayout
         try{
             cursor.moveToFirst();
             while(true){
+                projectCount++;
                 final int pos = cursor.getInt(0);
 
                 LinearLayout ll = new LinearLayout(this);
@@ -268,6 +270,8 @@ public class ProjectList extends ActionBarActivity implements SwipeRefreshLayout
         }catch (Exception e){}
 
         cursor.close();
+
+
     }
 
     public void createTables(){
