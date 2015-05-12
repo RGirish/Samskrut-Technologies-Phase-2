@@ -32,10 +32,8 @@ public class MyVrView extends CardboardActivity{
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)){
-            finish();
-        }
-        else if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)){
+        if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)){
+            //goes to the next image
             Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
             cursor.moveToFirst();
             int COUNT = cursor.getInt(0);
@@ -47,7 +45,8 @@ public class MyVrView extends CardboardActivity{
                 finish();
             }
         }
-        else if ((keyCode == KeyEvent.KEYCODE_BACK)){
+        else{
+            //goes back
             super.onBackPressed();
         }
         return true;

@@ -2,9 +2,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#fff">
+    android:background="#000">
 
-    <LinearLayout
+    <!--<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:gravity="center"
@@ -18,7 +18,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-    </LinearLayout>
+    </LinearLayout>-->
+
+
 
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/swipe_container"
@@ -26,14 +28,13 @@
         android:layout_height="wrap_content">
 
         <ScrollView
+            android:id="@+id/parent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <LinearLayout
-                android:layout_marginTop="20dp"
                 android:gravity="center"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
+                android:paddingBottom="10dp"
                 android:orientation="vertical"
                 android:id="@+id/mainll"
                 android:layout_width="match_parent"
