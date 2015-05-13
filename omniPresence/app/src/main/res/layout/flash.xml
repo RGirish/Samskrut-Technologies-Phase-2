@@ -6,6 +6,7 @@
     android:background="#fff">
 
     <ImageView
+        android:id="@+id/flash"
         android:src="@drawable/flash"
         android:scaleType="centerCrop"
         android:layout_width="match_parent"

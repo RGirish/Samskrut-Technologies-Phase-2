@@ -13,19 +13,22 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
 import android.os.Handler;
+import android.speech.tts.TextToSpeech;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Toast;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
@@ -40,15 +43,24 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
-public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener/*, ViewTreeObserver.OnScrollChangedListener*/{
+public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, TextToSpeech.OnInitListener/*, ViewTreeObserver.OnScrollChangedListener*/{
 
     public static SQLiteDatabase db;
     public static int projectCount=0;
     ProgressDialog dialog1;
     SwipeRefreshLayout swipeLayout;
+    public static TextToSpeech tts;
+
+    int COUNT_th=0,CURR_COUNT_th=0;
+    ArrayList<Integer> notAvailableList_th;
     int COUNT=0,CURR_COUNT=0;
-    ArrayList<Integer> notAvailableList;
+    ArrayList<String> notAvailableList;
+
+    ScrollView mainScrollView;
+    LinearLayout mainll;
+    int currentProject;
 
     private float mActionBarHeight;
     private ActionBar mActionBar;
@@ -59,6 +71,8 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         super.onCreate(savedInstanceState);
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
+
+        currentProject = 0;
 
         View decorView = getWindow().getDecorView();
         int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
@@ -76,6 +90,20 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
         setFullscreen(true);
 
+        mainScrollView = (ScrollView)findViewById(R.id.parent);
+        mainll = (LinearLayout)findViewById(R.id.mainll);
+        mainScrollView.setSmoothScrollingEnabled(true);
+
+        mainScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                int scrollYPx = mainScrollView.getScrollY();
+                int scrollYDp = pxToDp(scrollYPx);
+                currentProject = scrollYDp/360;
+                Log.e("currentProject", String.valueOf(currentProject));
+            }
+        });
+
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
 
@@ -91,6 +119,56 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
         displayEverything();
 
+        tts = new TextToSpeech(this,this);
+
+    }
+
+    public int dpToPx(int dp) {
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        return (int)((dp * displayMetrics.density) + 0.5);
+    }
+
+    public int pxToDp(int px) {
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        return (int) ((px/displayMetrics.density)+0.5);
+    }
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)){
+
+            Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+            cursor.moveToFirst();
+            int COUNT = cursor.getInt(0);
+            cursor.close();
+            if(currentProject+1<COUNT) {
+                currentProject++;
+                ImageView iv = (ImageView)mainll.findViewWithTag("project"+currentProject);
+                //mainScrollView.smoothScrollTo(0,iv.getTop());
+                //mainScrollView.setScrollY(mainScrollView.getScrollY() + (int) getResources().getDimension(R.dimen.dp360));
+
+                int scrollYPx = mainScrollView.getScrollY();
+                int scrollYDp = pxToDp(scrollYPx);
+
+                mainScrollView.smoothScrollBy(0, dpToPx(360-scrollYDp%360));
+
+                //Toast.makeText(this,String.valueOf(dpToPx(360)),Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this,String.valueOf(360-scrollYDp%360),Toast.LENGTH_SHORT).show();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                        intent.putExtra("pos",currentProject);
+                        startActivity(intent);
+                    }
+                }, 1000);
+
+            }
+        }else if((keyCode == KeyEvent.KEYCODE_BACK)){
+            super.onBackPressed();
+        }
+        return true;
     }
 
     @Override
@@ -173,6 +251,8 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     public void download(){
         dialog1 = ProgressDialog.show(this,null,"Just a moment...");
         db.execSQL("DELETE FROM projects;");
+        db.execSQL("DELETE FROM subProjects;");
+
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
         query.orderByAscending("pos");
         query.selectKeys( Arrays.asList("pos", "projectName", "description"));
@@ -182,7 +262,24 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                     for (ParseObject ob : objects) {
                         db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getString("projectName") + "','" + ob.getString("description") + "');");
                     }
-                    downloadImages();
+
+                    final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
+                    query.orderByAscending("projectPos");
+                    query.addAscendingOrder("pos");
+                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts"));
+                    query.findInBackground(new FindCallback<ParseObject>() {
+                        public void done(List<ParseObject> objects, ParseException e) {
+                            if (e == null) {
+                                for (ParseObject ob : objects) {
+                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "');");
+                                }
+                                downloadImages();
+                            } else {
+                                Log.e("PARSE", "Error: " + e.getMessage());
+                            }
+                        }
+                    });
+
                 } else {
                     Log.e("PARSE", "Error: " + e.getMessage());
                 }
@@ -197,10 +294,11 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             folder.mkdir();
         }
 
-        Cursor cursor = db.rawQuery("SELECT COUNT(title) FROM projects;",null);
+        //set notavailablelist for projects
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
         cursor.moveToFirst();
-        COUNT = cursor.getInt(0);
-        notAvailableList = new ArrayList<>(COUNT);
+        COUNT_th = cursor.getInt(0);
+        notAvailableList_th = new ArrayList<>(COUNT_th);
         cursor.close();
 
         cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;", null);
@@ -208,12 +306,36 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                String FILENAME = Environment.getExternalStorageDirectory().toString() + "/omniPresence/" + pos + ".jpg";
                 String FILENAME_TH = Environment.getExternalStorageDirectory().toString() + "/omniPresence/" + pos + "_th.jpg";
-                File file = new File(FILENAME);
                 File file_th = new File(FILENAME_TH);
-                if (!file.exists() || !file_th.exists()) {
-                    notAvailableList.add(pos);
+                if (!file_th.exists()) {
+                    notAvailableList_th.add(pos);
+                }
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+        //set notavailablelist for subprojects
+        cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects;",null);
+        cursor.moveToFirst();
+        COUNT = cursor.getInt(0);
+        notAvailableList = new ArrayList<>(COUNT);
+        cursor.close();
+
+        cursor = db.rawQuery("SELECT projectPos,pos FROM subProjects ORDER BY projectPos,pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int projectPos = cursor.getInt(0);
+                int pos = cursor.getInt(1);
+                String FILENAME = Environment.getExternalStorageDirectory().toString() + "/omniPresence/" + projectPos + "_" + pos + ".jpg";
+                File file = new File(FILENAME);
+                if (!file.exists()) {
+                    notAvailableList.add(projectPos + "_" + pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -226,36 +348,8 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
 
 
-        CURR_COUNT=0;
-        for (final int k : notAvailableList) {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
-            query.whereEqualTo("pos", k);
-            query.findInBackground(new FindCallback<ParseObject>() {
-                public void done(List<ParseObject> objects, ParseException e) {
-                    if (e == null) {
-                        ParseFile myFile = objects.get(0).getParseFile("photoSphere");
-                        myFile.getDataInBackground(new GetDataCallback() {
-                            public void done(byte[] data, ParseException e) {
-                                if (e == null) {
-                                    writeFile(data, k + ".jpg");
-                                    CURR_COUNT++;
-                                    if (CURR_COUNT == COUNT*2) {
-                                        dialog1.dismiss();
-                                        displayEverything();
-                                    }
-                                } else {
-                                    Log.e("Something went wrong", "Something went wrong");
-                                }
-                            }
-                        });
-                    } else {
-                        Log.e("PARSE", "Error: " + e.getMessage());
-                    }
-                }
-            });
-        }
-
-        for (final int k : notAvailableList) {
+        CURR_COUNT_th=0;
+        for (final int k : notAvailableList_th) {
             ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
             query.whereEqualTo("pos", k);
             query.findInBackground(new FindCallback<ParseObject>() {
@@ -266,10 +360,44 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                             public void done(byte[] data, ParseException e) {
                                 if (e == null) {
                                     writeFile(data, k + "_th.jpg");
-                                    CURR_COUNT++;
-                                    if (CURR_COUNT == COUNT*2) {
-                                        dialog1.dismiss();
-                                        displayEverything();
+                                    CURR_COUNT_th++;
+                                    if (CURR_COUNT_th == COUNT_th) {
+
+
+                                        CURR_COUNT=0;
+                                        for (final String s : notAvailableList) {
+                                            ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
+                                            String[] parts = s.split("_");
+                                            final int projectPos = Integer.parseInt(parts[0]);
+                                            final int pos = Integer.parseInt(parts[1]);
+                                            query.whereEqualTo("pos", pos);
+                                            query.whereEqualTo("projectPos", projectPos);
+                                            query.findInBackground(new FindCallback<ParseObject>() {
+                                                public void done(List<ParseObject> objects, ParseException e) {
+                                                    if (e == null) {
+                                                        ParseFile myFile = objects.get(0).getParseFile("photoSphere");
+                                                        myFile.getDataInBackground(new GetDataCallback() {
+                                                            public void done(byte[] data, ParseException e) {
+                                                                if (e == null) {
+                                                                    writeFile(data, projectPos + "_" + pos + ".jpg");
+                                                                    CURR_COUNT++;
+                                                                    if (CURR_COUNT == COUNT) {
+                                                                        dialog1.dismiss();
+                                                                        displayEverything();
+                                                                    }
+                                                                } else {
+                                                                    Log.e("Something went wrong", "Something went wrong");
+                                                                }
+                                                            }
+                                                        });
+                                                    } else {
+                                                        Log.e("PARSE", "Error: " + e.getMessage());
+                                                    }
+                                                }
+                                            });
+                                        }
+
+
                                     }
                                 } else {
                                     Log.e("Something went wrong", "Something went wrong");
@@ -283,7 +411,9 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             });
         }
 
-        if(notAvailableList.size()==0){
+
+
+        if(notAvailableList_th.size()==0 && notAvailableList.size()==0){
             dialog1.dismiss();
             displayEverything();
         }
@@ -301,17 +431,19 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             cursor.moveToFirst();
             while(true){
                 projectCount++;
-                final int pos = cursor.getInt(0);
+                final int projectPos = cursor.getInt(0);
 
                 LinearLayout ll = new LinearLayout(this);
                 ll.setOrientation(LinearLayout.VERTICAL);
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                ll.setPadding(0,0,0,(int)getResources().getDimension(R.dimen.dp20));
                 ll.setLayoutParams(params);
                 ll.setBackgroundColor(Color.BLACK);
                 ll.setGravity(Gravity.CENTER_HORIZONTAL);
 
                 ImageView imageButton = new ImageView(this);
-                Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/omniPresence/" + pos + "_th.jpg");
+                imageButton.setTag("project"+projectPos);
+                Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/omniPresence/" + projectPos + "_th.jpg");
                 imageButton.setImageBitmap(bitmap);
                 params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)getResources().getDimension(R.dimen.dp330));
                 params.setMargins(0, (int) getResources().getDimension(R.dimen.dp5), 0, (int) getResources().getDimension(R.dimen.dp5));
@@ -321,7 +453,8 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                     @Override
                     public void onClick(View view) {
                         Intent intent = new Intent(ProjectList.this, MyVrView.class);
-                        intent.putExtra("pos",pos);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",0);
                         startActivity(intent);
                     }
                 });
@@ -371,6 +504,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     public void createTables(){
         try{
             db.execSQL("CREATE TABLE projects(pos NUMBER, title TEXT, desc TEXT);");
+            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT);");
         }catch(Exception e){}
     }
 
@@ -407,6 +541,19 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
         }
         getWindow().setAttributes(attrs);
+    }
+
+    @Override
+    public void onInit(int status) {
+        if (status == TextToSpeech.SUCCESS) {
+            int result = tts.setLanguage(Locale.US);
+            tts.setSpeechRate(0.75f);
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED){
+                Toast.makeText(this,"This Language is not supported!",Toast.LENGTH_LONG).show();
+            }
+        }else{
+            Toast.makeText(this,"TTS Initialization Failed!",Toast.LENGTH_LONG).show();
+        }
     }
 
 }

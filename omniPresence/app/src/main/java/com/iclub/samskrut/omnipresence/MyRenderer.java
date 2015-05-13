@@ -14,17 +14,19 @@ import org.rajawali3d.primitives.Sphere;
 
 public class MyRenderer extends RajawaliCardboardRenderer {
 
-    public int POS;
+    public int projectPos;
+    public int pos;
 
-    public MyRenderer(Context context, int pos) {
+    public MyRenderer(Context context, int pp, int p) {
         super(context);
-        POS = pos;
+        projectPos = pp;
+        pos = p;
     }
 
     @Override
     protected void initScene() {
 
-        Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/omnipresence/" + POS + ".jpg");
+        Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/omnipresence/" + projectPos + "_" + pos + ".jpg");
         Sphere sphere = createPhotoSphereWithTexture(new Texture("photo", bitmap));
 
         getCurrentScene().addChild(sphere);
