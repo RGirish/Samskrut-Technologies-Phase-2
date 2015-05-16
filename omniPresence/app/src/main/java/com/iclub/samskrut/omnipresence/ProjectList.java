@@ -11,11 +11,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Environment;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBar;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
@@ -40,6 +38,7 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,22 +51,17 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     ProgressDialog dialog1;
     SwipeRefreshLayout swipeLayout;
     public static TextToSpeech tts;
-
     int COUNT_th=0,CURR_COUNT_th=0;
     ArrayList<Integer> notAvailableList_th;
     int COUNT=0,CURR_COUNT=0;
     ArrayList<String> notAvailableList;
-
     ScrollView mainScrollView;
     LinearLayout mainll;
-    int currentProject;
-
-    private float mActionBarHeight;
-    private ActionBar mActionBar;
+    static int currentProject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //getWindow().requestFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+
         super.onCreate(savedInstanceState);
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
@@ -77,17 +71,6 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         View decorView = getWindow().getDecorView();
         int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
-
-        //getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        //getSupportActionBar().setCustomView(R.layout.actionbar);
-
-        /*final TypedArray styledAttributes = getTheme().obtainStyledAttributes(
-                new int[] { android.R.attr.actionBarSize });
-        mActionBarHeight = styledAttributes.getDimension(0, 0);
-        styledAttributes.recycle();
-        mActionBar = getSupportActionBar();
-        ((ScrollView)findViewById(R.id.parent)).getViewTreeObserver().addOnScrollChangedListener(this);*/
-
         setFullscreen(true);
 
         mainScrollView = (ScrollView)findViewById(R.id.parent);
@@ -100,7 +83,6 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                 int scrollYPx = mainScrollView.getScrollY();
                 int scrollYDp = pxToDp(scrollYPx);
                 currentProject = scrollYDp/360;
-                Log.e("currentProject", String.valueOf(currentProject));
             }
         });
 
@@ -144,29 +126,19 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             cursor.close();
             if(currentProject+1<COUNT) {
                 currentProject++;
-                ImageView iv = (ImageView)mainll.findViewWithTag("project"+currentProject);
-                //mainScrollView.smoothScrollTo(0,iv.getTop());
-                //mainScrollView.setScrollY(mainScrollView.getScrollY() + (int) getResources().getDimension(R.dimen.dp360));
-
                 int scrollYPx = mainScrollView.getScrollY();
                 int scrollYDp = pxToDp(scrollYPx);
-
                 mainScrollView.smoothScrollBy(0, dpToPx(360-scrollYDp%360));
-
-                //Toast.makeText(this,String.valueOf(dpToPx(360)),Toast.LENGTH_SHORT).show();
-                //Toast.makeText(this,String.valueOf(360-scrollYDp%360),Toast.LENGTH_SHORT).show();
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
-                        intent.putExtra("pos",currentProject);
-                        startActivity(intent);
-                    }
-                }, 1000);
-
+            }else{
+                mainScrollView.smoothScrollTo(0,0);
             }
         }else if((keyCode == KeyEvent.KEYCODE_BACK)){
             super.onBackPressed();
+        }else{
+            Intent intent = new Intent(ProjectList.this, MyVrView.class);
+            intent.putExtra("projectPos",currentProject);
+            intent.putExtra("pos",0);
+            startActivity(intent);
         }
         return true;
     }
@@ -174,6 +146,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     @Override
     public void onResume(){
         super.onResume();
+        tts.stop();
         View decorView = getWindow().getDecorView();
         if (android.os.Build.VERSION.SDK_INT >= 19) {
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -191,36 +164,6 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         }
     }
 
-    /*@Override
-    public void onUpOrCancelMotionEvent(ScrollState scrollState) {
-        ActionBar ab = getSupportActionBar();
-        if (scrollState == ScrollState.UP) {
-            if (ab.isShowing()) {
-                ab.hide();
-            }
-        } else if (scrollState == ScrollState.DOWN) {
-            if (!ab.isShowing()) {
-                ab.show();
-            }
-        }
-    }
-
-    @Override
-    public void onScrollChanged(int scrollY, boolean firstScroll,boolean dragging) {}
-
-    @Override
-    public void onDownMotionEvent() {}
-
-    @Override
-    public void onScrollChanged() {
-        float y = ((ScrollView)findViewById(R.id.parent)).getScrollY();
-        if (y >= mActionBarHeight && mActionBar.isShowing()) {
-            mActionBar.hide();
-        } else if ( y==0 && !mActionBar.isShowing()) {
-            mActionBar.show();
-        }
-    }*/
-
     @Override
     public void onRefresh() {
 
@@ -235,7 +178,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     }
 
     public void checkForDownload(){
-        Cursor cursor = db.rawQuery("SELECT COUNT(title) FROM projects;", null);
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
         cursor.moveToFirst();
         int count = cursor.getInt(0);
         if(count == 0){
@@ -249,18 +192,18 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     }
 
     public void download(){
-        dialog1 = ProgressDialog.show(this,null,"Just a moment...");
+        dialog1 = ProgressDialog.show(this,null,"Downloading data...");
         db.execSQL("DELETE FROM projects;");
         db.execSQL("DELETE FROM subProjects;");
 
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
         query.orderByAscending("pos");
-        query.selectKeys( Arrays.asList("pos", "projectName", "description"));
+        query.selectKeys( Arrays.asList("pos"));
         query.findInBackground(new FindCallback<ParseObject>() {
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getString("projectName") + "','" + ob.getString("description") + "');");
+                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ");");
                     }
 
                     final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
@@ -289,10 +232,10 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
     public void downloadImages(){
 
-        File folder = new File(Environment.getExternalStorageDirectory() + "/omniPresence");
+        /*File folder = new File(getFilesDir() + "/omniPresence");
         if (!folder.exists()) {
             folder.mkdir();
-        }
+        }*/
 
         //set notavailablelist for projects
         Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
@@ -306,9 +249,9 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                String FILENAME_TH = Environment.getExternalStorageDirectory().toString() + "/omniPresence/" + pos + "_th.jpg";
-                File file_th = new File(FILENAME_TH);
-                if (!file_th.exists()) {
+                //String FILENAME_TH = getFilesDir().toString() + "/" + pos + "_th.jpg";
+                //File file_th = new File(FILENAME_TH);
+                if (!exists(pos + "_th.jpg")) {
                     notAvailableList_th.add(pos);
                 }
                 cursor.moveToNext();
@@ -332,9 +275,9 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                String FILENAME = Environment.getExternalStorageDirectory().toString() + "/omniPresence/" + projectPos + "_" + pos + ".jpg";
-                File file = new File(FILENAME);
-                if (!file.exists()) {
+                //String FILENAME = getFilesDir().toString() + "/" + projectPos + "_" + pos + ".jpg";
+                //File file = new File(FILENAME);
+                if (!exists(projectPos + "_" + pos + ".jpg")) {
                     notAvailableList.add(projectPos + "_" + pos);
                 }
                 cursor.moveToNext();
@@ -347,7 +290,16 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
 
 
-
+        if(notAvailableList_th.size()>0){
+            dialog1.setMessage("Downloading Thumbnail 1/" + notAvailableList_th.size());
+        }else{
+            if(notAvailableList.size()>0){
+                downloadImages2();
+            }else{
+                dialog1.dismiss();
+                displayEverything();
+            }
+        }
         CURR_COUNT_th=0;
         for (final int k : notAvailableList_th) {
             ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
@@ -361,42 +313,15 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                                 if (e == null) {
                                     writeFile(data, k + "_th.jpg");
                                     CURR_COUNT_th++;
-                                    if (CURR_COUNT_th == COUNT_th) {
+                                    dialog1.setMessage("Downloading Thumbnail "+(CURR_COUNT_th+1)+"/"+notAvailableList_th.size());
+                                    if (CURR_COUNT_th == notAvailableList_th.size()) {
 
-
-                                        CURR_COUNT=0;
-                                        for (final String s : notAvailableList) {
-                                            ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
-                                            String[] parts = s.split("_");
-                                            final int projectPos = Integer.parseInt(parts[0]);
-                                            final int pos = Integer.parseInt(parts[1]);
-                                            query.whereEqualTo("pos", pos);
-                                            query.whereEqualTo("projectPos", projectPos);
-                                            query.findInBackground(new FindCallback<ParseObject>() {
-                                                public void done(List<ParseObject> objects, ParseException e) {
-                                                    if (e == null) {
-                                                        ParseFile myFile = objects.get(0).getParseFile("photoSphere");
-                                                        myFile.getDataInBackground(new GetDataCallback() {
-                                                            public void done(byte[] data, ParseException e) {
-                                                                if (e == null) {
-                                                                    writeFile(data, projectPos + "_" + pos + ".jpg");
-                                                                    CURR_COUNT++;
-                                                                    if (CURR_COUNT == COUNT) {
-                                                                        dialog1.dismiss();
-                                                                        displayEverything();
-                                                                    }
-                                                                } else {
-                                                                    Log.e("Something went wrong", "Something went wrong");
-                                                                }
-                                                            }
-                                                        });
-                                                    } else {
-                                                        Log.e("PARSE", "Error: " + e.getMessage());
-                                                    }
-                                                }
-                                            });
+                                        if(notAvailableList.size()>0){
+                                            downloadImages2();
+                                        }else{
+                                            dialog1.dismiss();
+                                            displayEverything();
                                         }
-
 
                                     }
                                 } else {
@@ -411,13 +336,48 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             });
         }
 
+    }
 
+    public void downloadImages2(){
 
-        if(notAvailableList_th.size()==0 && notAvailableList.size()==0){
+        dialog1.setMessage("Downloading Panorama 1/"+notAvailableList.size());
+        if(notAvailableList.size()==0){
             dialog1.dismiss();
             displayEverything();
         }
-
+        CURR_COUNT=0;
+        for (final String s : notAvailableList) {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
+            String[] parts = s.split("_");
+            final int projectPos = Integer.parseInt(parts[0]);
+            final int pos = Integer.parseInt(parts[1]);
+            query.whereEqualTo("pos", pos);
+            query.whereEqualTo("projectPos", projectPos);
+            query.findInBackground(new FindCallback<ParseObject>() {
+                public void done(List<ParseObject> objects, ParseException e) {
+                    if (e == null) {
+                        ParseFile myFile = objects.get(0).getParseFile("photoSphere");
+                        myFile.getDataInBackground(new GetDataCallback() {
+                            public void done(byte[] data, ParseException e) {
+                                if (e == null) {
+                                    writeFile(data, projectPos + "_" + pos + ".jpg");
+                                    CURR_COUNT++;
+                                    dialog1.setMessage("Downloading Panorama "+(CURR_COUNT+1)+"/"+notAvailableList.size());
+                                    if (CURR_COUNT == notAvailableList.size()) {
+                                        dialog1.dismiss();
+                                        displayEverything();
+                                    }
+                                } else {
+                                    Log.e("Something went wrong", "Something went wrong");
+                                }
+                            }
+                        });
+                    } else {
+                        Log.e("PARSE", "Error: " + e.getMessage());
+                    }
+                }
+            });
+        }
     }
 
     public void displayEverything(){
@@ -426,7 +386,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         mainll.removeAllViews();
 
 
-        Cursor cursor = db.rawQuery("SELECT pos,title,desc FROM projects ORDER BY pos;",null);
+        Cursor cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -436,19 +396,19 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                 LinearLayout ll = new LinearLayout(this);
                 ll.setOrientation(LinearLayout.VERTICAL);
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                ll.setPadding(0,0,0,(int)getResources().getDimension(R.dimen.dp20));
+                ll.setPadding(0, 0, 0, (int) getResources().getDimension(R.dimen.dp20));
                 ll.setLayoutParams(params);
                 ll.setBackgroundColor(Color.BLACK);
                 ll.setGravity(Gravity.CENTER_HORIZONTAL);
 
                 ImageView imageButton = new ImageView(this);
-                imageButton.setTag("project"+projectPos);
-                Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/omniPresence/" + projectPos + "_th.jpg");
+                imageButton.setTag("project" + projectPos);
+                InputStream is = openFileInput(projectPos + "_th.jpg");
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
                 imageButton.setImageBitmap(bitmap);
                 params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)getResources().getDimension(R.dimen.dp330));
                 params.setMargins(0, (int) getResources().getDimension(R.dimen.dp5), 0, (int) getResources().getDimension(R.dimen.dp5));
                 imageButton.setLayoutParams(params);
-                //imageButton.setBackgroundColor(Color.WHITE);
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -459,33 +419,6 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
                     }
                 });
                 ll.addView(imageButton);
-
-                /*TextView textView = new TextView(this);
-                textView.setText(cursor.getString(1));
-                textView.setTextSize(20);
-                params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                params.setMargins(0, (int) getResources().getDimension(R.dimen.dp10), 0, 0);
-                textView.setLayoutParams(params);
-                textView.setTextColor(Color.parseColor("#666666"));
-                textView.setTypeface(null, Typeface.BOLD);
-                ll.addView(textView);
-
-
-                textView = new TextView(this);
-                textView.setText(cursor.getString(2));
-                textView.setTextSize(16);
-                textView.setLayoutParams(params);
-                textView.setTextColor(Color.parseColor("#666666"));
-                textView.setGravity(Gravity.CENTER);
-                ll.addView(textView);
-
-                Button button = new Button(this);
-                params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) getResources().getDimension(R.dimen.dp1));
-                params.setMargins(0, (int) getResources().getDimension(R.dimen.dp20), 0, (int) getResources().getDimension(R.dimen.dp20));
-                button.setLayoutParams(params);
-                button.setBackgroundColor(Color.parseColor("#cccccc"));
-                button.setPadding((int) getResources().getDimension(R.dimen.dp10), 0, (int) getResources().getDimension(R.dimen.dp10), 0);
-                ll.addView(button);*/
 
                 mainll.addView(ll);
 
@@ -503,7 +436,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
     public void createTables(){
         try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER, title TEXT, desc TEXT);");
+            db.execSQL("CREATE TABLE projects(pos NUMBER);");
             db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT);");
         }catch(Exception e){}
     }
@@ -521,23 +454,20 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
     public void writeFile(byte[] data, String fileName) {
         try {
-            FileOutputStream out = new FileOutputStream(Environment.getExternalStorageDirectory() + "/omniPresence/"+fileName);
-            out.write(data);
-            out.close();
+            FileOutputStream fos = openFileOutput(fileName, Context.MODE_PRIVATE);
+            fos.write(data);
+            fos.close();
         }catch(Exception e){
             Log.e("WriteFile",e.getMessage());
         }
     }
 
-    private void setFullscreen(boolean fullscreen)
-    {
+    private void setFullscreen(boolean fullscreen) {
         WindowManager.LayoutParams attrs = getWindow().getAttributes();
-        if (fullscreen)
-        {
+        if (fullscreen) {
             attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         }
-        else
-        {
+        else{
             attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
         }
         getWindow().setAttributes(attrs);
@@ -554,6 +484,20 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         }else{
             Toast.makeText(this,"TTS Initialization Failed!",Toast.LENGTH_LONG).show();
         }
+    }
+
+    public boolean exists(String fname){
+        File file = getBaseContext().getFileStreamPath(fname);
+        return file.exists();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onDestroy();
     }
 
 }

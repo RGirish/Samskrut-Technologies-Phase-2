@@ -8,6 +8,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 public class Flash extends ActionBarActivity {
@@ -17,12 +18,7 @@ public class Flash extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.flash);
 
-        getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        getSupportActionBar().setCustomView(R.layout.actionbar);
-
-        View decorView = getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
-        decorView.setSystemUiVisibility(uiOptions);
+        setFullscreen(true);
 
         ImageView imageView = (ImageView)findViewById(R.id.flash);
         imageView.setOnClickListener(new View.OnClickListener() {
@@ -34,6 +30,17 @@ public class Flash extends ActionBarActivity {
             }
         });
 
+    }
+
+    private void setFullscreen(boolean fullscreen) {
+        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        if (fullscreen) {
+            attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        else{
+            attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        getWindow().setAttributes(attrs);
     }
 
 }
