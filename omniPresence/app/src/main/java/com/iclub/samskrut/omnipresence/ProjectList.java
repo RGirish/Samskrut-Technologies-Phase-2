@@ -1,6 +1,7 @@
 
 package com.iclub.samskrut.omnipresence;
 
+import android.animation.ValueAnimator;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -9,13 +10,18 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -28,6 +34,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
+import com.google.vrtoolkit.cardboard.CardboardActivity;
+import com.google.vrtoolkit.cardboard.CardboardView;
+import com.google.vrtoolkit.cardboard.Eye;
+import com.google.vrtoolkit.cardboard.HeadTransform;
+import com.google.vrtoolkit.cardboard.Viewport;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
 import com.parse.Parse;
@@ -43,8 +54,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import javax.microedition.khronos.egl.EGLConfig;
 
-public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, TextToSpeech.OnInitListener/*, ViewTreeObserver.OnScrollChangedListener*/{
+public class ProjectList extends CardboardActivity implements SwipeRefreshLayout.OnRefreshListener, TextToSpeech.OnInitListener,CardboardView.StereoRenderer, SensorEventListener {
 
     public static SQLiteDatabase db;
     public static int projectCount=0;
@@ -52,12 +64,17 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     SwipeRefreshLayout swipeLayout;
     public static TextToSpeech tts;
     int COUNT_th=0,CURR_COUNT_th=0;
-    ArrayList<Integer> notAvailableList_th;
+    ArrayList<Integer> notAvailableList_th,availableList_th;
     int COUNT=0,CURR_COUNT=0;
-    ArrayList<String> notAvailableList;
+    ArrayList<String> notAvailableList,availableList;
     ScrollView mainScrollView;
     LinearLayout mainll;
     static int currentProject;
+    int d=0,dd=0;
+    int Xint,Yint,Zint;
+    private SensorManager senSensorManager;
+    private Sensor senAccelerometer;
+    boolean FLAG=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +82,10 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         super.onCreate(savedInstanceState);
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
+
+        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         currentProject = 0;
 
@@ -120,32 +141,92 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)){
 
-            Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
-            cursor.moveToFirst();
-            int COUNT = cursor.getInt(0);
-            cursor.close();
-            if(currentProject+1<COUNT) {
-                currentProject++;
-                int scrollYPx = mainScrollView.getScrollY();
-                int scrollYDp = pxToDp(scrollYPx);
-                mainScrollView.smoothScrollBy(0, dpToPx(360-scrollYDp%360));
-            }else{
-                mainScrollView.smoothScrollTo(0,0);
+            d++;
+            Handler handler = new Handler();
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    if (d == 1){
+                        //Scroll Down to next project in list
+                        Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+                        cursor.moveToFirst();
+                        int COUNT = cursor.getInt(0);
+                        cursor.close();
+                        if(currentProject+1<COUNT) {
+                            currentProject++;
+                            int scrollYPx = mainScrollView.getScrollY();
+                            int scrollYDp = pxToDp(scrollYPx);
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                            {
+                                ValueAnimator realSmoothScrollAnimation =
+                                        ValueAnimator.ofInt(mainScrollView.getScrollY(), mainScrollView.getScrollY() + dpToPx(360 - scrollYDp % 360));
+                                realSmoothScrollAnimation.setDuration(1000);
+                                realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                    @Override
+                                    public void onAnimationUpdate(ValueAnimator animation)
+                                    {
+                                        int scrollTo = (Integer) animation.getAnimatedValue();
+                                        mainScrollView.scrollTo(0, scrollTo);
+                                    }
+                                });
+
+                                realSmoothScrollAnimation.start();
+                            }
+                            else{
+                                mainScrollView.smoothScrollBy(0, dpToPx(360 - scrollYDp % 360));
+                            }
+
+                        }else{
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                            {
+                                ValueAnimator realSmoothScrollAnimation =
+                                        ValueAnimator.ofInt(mainScrollView.getScrollY(), 0);
+                                realSmoothScrollAnimation.setDuration(1000);
+                                realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                    @Override
+                                    public void onAnimationUpdate(ValueAnimator animation)
+                                    {
+                                        int scrollTo = (Integer) animation.getAnimatedValue();
+                                        mainScrollView.scrollTo(0, scrollTo);
+                                    }
+                                });
+
+                                realSmoothScrollAnimation.start();
+                            }
+                            else{
+                                mainScrollView.smoothScrollTo(0,0);
+                            }
+                        }
+                    }
+                    if (d == 2){
+                        //Open current project in list
+                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                        intent.putExtra("projectPos",currentProject);
+                        intent.putExtra("pos",0);
+                        startActivity(intent);
+                    }
+                    d = 0;
+                }
+            };
+            if (d == 1) {
+                handler.postDelayed(r, 500);
             }
         }else if((keyCode == KeyEvent.KEYCODE_BACK)){
             super.onBackPressed();
-        }else{
-            Intent intent = new Intent(ProjectList.this, MyVrView.class);
-            intent.putExtra("projectPos",currentProject);
-            intent.putExtra("pos",0);
-            startActivity(intent);
         }
         return true;
+    }
+
+    protected void onPause() {
+        super.onPause();
+        senSensorManager.unregisterListener(this);
     }
 
     @Override
     public void onResume(){
         super.onResume();
+        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         tts.stop();
         View decorView = getWindow().getDecorView();
         if (android.os.Build.VERSION.SDK_INT >= 19) {
@@ -193,28 +274,66 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
     public void download(){
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
+
+        /*
+        db.execSQL("DELETE FROM projects_prev;");
+        db.execSQL("DELETE FROM subProjects_prev;");
+
+        Cursor cursor = db.rawQuery("SELECT * FROM projects", null);
+        cursor.moveToFirst();
+
+        while(true){
+            int pos = cursor.getInt(0);
+            String ts = cursor.getString(1);
+            db.execSQL("INSERT INTO projects_prev VALUES("+pos+",'"+ts+"');");
+            cursor.moveToNext();
+            if(cursor.isAfterLast()){
+                break;
+            }
+        }
+
+        cursor = db.rawQuery("SELECT * FROM projects", null);
+        cursor.moveToFirst();
+
+        while(true){
+            int projectPos = cursor.getInt(0);
+            int pos = cursor.getInt(1);
+            String tts = cursor.getString(2);
+            String ts = cursor.getString(3);
+            db.execSQL("INSERT INTO subProjects_prev VALUES("+projectPos+","+pos+",'"+tts+"','"+ts+"');");
+            cursor.moveToNext();
+            if(cursor.isAfterLast()){
+                break;
+            }
+        }
+        cursor.close();
+        */
+
+
         db.execSQL("DELETE FROM projects;");
         db.execSQL("DELETE FROM subProjects;");
 
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
         query.orderByAscending("pos");
-        query.selectKeys( Arrays.asList("pos"));
+        query.selectKeys( Arrays.asList("pos","updatedAt"));
         query.findInBackground(new FindCallback<ParseObject>() {
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ");");
+                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        Log.e("QUERY","INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
                     }
 
                     final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
                     query.orderByAscending("projectPos");
                     query.addAscendingOrder("pos");
-                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts"));
+                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts", "updatedAt"));
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
                             if (e == null) {
                                 for (ParseObject ob : objects) {
-                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "');");
+                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getUpdatedAt() + "');");
+                                    Log.e("QUERY","INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getUpdatedAt() + "');");
                                 }
                                 downloadImages();
                             } else {
@@ -230,12 +349,7 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         });
     }
 
-    public void downloadImages(){
-
-        /*File folder = new File(getFilesDir() + "/omniPresence");
-        if (!folder.exists()) {
-            folder.mkdir();
-        }*/
+    public void downloadImages() {
 
         //set notavailablelist for projects
         Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
@@ -249,10 +363,10 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                //String FILENAME_TH = getFilesDir().toString() + "/" + pos + "_th.jpg";
-                //File file_th = new File(FILENAME_TH);
                 if (!exists(pos + "_th.jpg")) {
                     notAvailableList_th.add(pos);
+                }else{
+                    availableList_th.add(pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -269,16 +383,17 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         notAvailableList = new ArrayList<>(COUNT);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT projectPos,pos FROM subProjects ORDER BY projectPos,pos;", null);
+        cursor = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                //String FILENAME = getFilesDir().toString() + "/" + projectPos + "_" + pos + ".jpg";
-                //File file = new File(FILENAME);
+                String timestamp = cursor.getString(2);
                 if (!exists(projectPos + "_" + pos + ".jpg")) {
                     notAvailableList.add(projectPos + "_" + pos);
+                }else{
+                    availableList.add(projectPos + "_" + pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -434,10 +549,19 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
 
     }
 
-    public void createTables(){
+    public void createTables() {
+
         try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER);");
-            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT);");
+            db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp String);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, timestamp DATE);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE projects_prev(pos NUMBER,timestamp String);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE subProjects_prev(projectPos NUMBER, pos NUMBER, tts TEXT, timestamp DATE);");
         }catch(Exception e){}
     }
 
@@ -500,4 +624,132 @@ public class ProjectList extends AppCompatActivity implements SwipeRefreshLayout
         super.onDestroy();
     }
 
+    @Override
+    public void onCardboardTrigger(){
+
+        dd++;
+        Handler handler = new Handler();
+        Runnable r = new Runnable() {
+
+            @Override
+            public void run() {
+                if (dd == 1) {
+                    Toast.makeText(ProjectList.this, "Single", Toast.LENGTH_SHORT).show();
+                }
+                if (dd == 2) {
+                    Toast.makeText(ProjectList.this, "Double", Toast.LENGTH_SHORT).show();
+                }
+                dd = 0;
+            }
+        };
+        if (dd == 1) {
+            handler.postDelayed(r, 500);
+        }
+
+        if(!((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8)) && !((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -6 || Zint == -7 || Zint == -8))){
+            Intent intent = new Intent(ProjectList.this, MyVrView.class);
+            intent.putExtra("projectPos",currentProject);
+            intent.putExtra("pos",0);
+            startActivity(intent);
+        }
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        if(FLAG){
+            Sensor mySensor = sensorEvent.sensor;
+            if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                Xint = (int) sensorEvent.values[0];
+                Yint = (int) sensorEvent.values[1];
+                Zint = (int) sensorEvent.values[2];
+
+                Log.e("COORDINATES", Xint + " " + Yint + " " + Zint);
+
+                if ((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8)) {
+
+                    Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    v.vibrate(200);
+
+                    Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+                    cursor.moveToFirst();
+                    int COUNT = cursor.getInt(0);
+                    cursor.close();
+                    if (currentProject + 1 < COUNT) {
+                        currentProject++;
+                        int scrollYPx = mainScrollView.getScrollY();
+                        int scrollYDp = pxToDp(scrollYPx);
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                        {
+                            ValueAnimator realSmoothScrollAnimation =
+                                    ValueAnimator.ofInt(mainScrollView.getScrollY(), mainScrollView.getScrollY() + dpToPx(360 - scrollYDp % 360));
+                            realSmoothScrollAnimation.setDuration(1000);
+                            realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation)
+                                {
+                                    int scrollTo = (Integer) animation.getAnimatedValue();
+                                    mainScrollView.scrollTo(0, scrollTo);
+                                }
+                            });
+
+                            realSmoothScrollAnimation.start();
+                        }
+                        else{
+                            mainScrollView.smoothScrollBy(0, dpToPx(360 - scrollYDp % 360));
+                        }
+
+
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                        {
+                            ValueAnimator realSmoothScrollAnimation = ValueAnimator.ofInt(mainScrollView.getScrollY(), 0);
+                            realSmoothScrollAnimation.setDuration(1000);
+                            realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation)
+                                {
+                                    int scrollTo = (Integer) animation.getAnimatedValue();
+                                    mainScrollView.scrollTo(0, scrollTo);
+                                }
+                            });
+
+                            realSmoothScrollAnimation.start();
+                        }
+                        else{
+                            mainScrollView.smoothScrollTo(0,0);
+                        }
+                    }
+                }
+            }
+            FLAG = false;
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    FLAG = true;
+                }
+            }, 1000);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    @Override
+    public void onNewFrame(HeadTransform headTransform) {}
+
+    @Override
+    public void onDrawEye(Eye eye) {}
+
+    @Override
+    public void onFinishFrame(Viewport viewport) {}
+
+    @Override
+    public void onSurfaceChanged(int i, int i1) {}
+
+    @Override
+    public void onSurfaceCreated(EGLConfig eglConfig) {}
+
+    @Override
+    public void onRendererShutdown() {}
 }
