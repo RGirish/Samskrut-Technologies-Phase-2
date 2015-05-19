@@ -14,7 +14,6 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Toast;
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
@@ -31,7 +30,6 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
     private float X, Y, Z;
     int projectPos;
     int pos;
-    String TAG="MYVRVIEW";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +48,7 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View vv) {
-                Log.e(TAG, "onCardboardTrigger TOUCH");
+                Log.e("onCardboardTrig", "onCardboardTrigger TOUCH");
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(100);
 
@@ -71,28 +69,61 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                 int COUNT_2 = cursor2.getInt(0);
                 cursor2.close();
                 if (pos + 1 < COUNT_2) {
-                    Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                    intent.putExtra("projectPos", projectPos);
-                    intent.putExtra("pos", pos + 1);
-                    startActivity(intent);
-                    finish();
+                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+projectPos+" AND pos="+(pos+1)+";",null);
+                    c.moveToFirst();
+                    String type = c.getString(0);
+                    if(type.equals("image")){
+                        Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
+                    }else if(type.equals("video")){
+                        Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
+                    }
                 } else {
                     Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
                     cursor1.moveToFirst();
                     int COUNT_1 = cursor1.getInt(0);
                     cursor1.close();
                     if (projectPos + 1 < COUNT_1) {
-                        Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                        intent.putExtra("projectPos", projectPos + 1);
-                        intent.putExtra("pos", 0);
-                        startActivity(intent);
-                        finish();
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(projectPos+1)+" AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                            intent.putExtra("projectPos",projectPos+1);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",projectPos+1);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }
                     } else {
-                        Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                        intent.putExtra("projectPos", 0);
-                        intent.putExtra("pos", 0);
-                        startActivity(intent);
-                        finish();
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                            intent.putExtra("projectPos",0);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",0);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }
                     }
                 }
 
@@ -103,6 +134,7 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
         view.setRenderer(renderer);
         view.setSurfaceRenderer(renderer);
 
+        //Text To Speech
         ProjectList.tts.stop();
         Cursor cursor = ProjectList.db.rawQuery("SELECT tts FROM subProjects WHERE projectPos=" + projectPos + " AND pos=" + pos + ";", null);
         cursor.moveToFirst();
@@ -125,28 +157,61 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                 int COUNT_2 = cursor2.getInt(0);
                 cursor2.close();
                 if (pos + 1 < COUNT_2) {
-                    Intent intent = new Intent(this, MyVrView.class);
-                    intent.putExtra("projectPos", projectPos);
-                    intent.putExtra("pos", pos + 1);
-                    startActivity(intent);
-                    finish();
+                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+projectPos+" AND pos="+(pos+1)+";",null);
+                    c.moveToFirst();
+                    String type = c.getString(0);
+                    if(type.equals("image")){
+                        Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
+                    }else if(type.equals("video")){
+                        Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
+                    }
                 } else {
                     Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
                     cursor1.moveToFirst();
                     int COUNT_1 = cursor1.getInt(0);
                     cursor1.close();
                     if (projectPos + 1 < COUNT_1) {
-                        Intent intent = new Intent(this, MyVrView.class);
-                        intent.putExtra("projectPos", projectPos + 1);
-                        intent.putExtra("pos", 0);
-                        startActivity(intent);
-                        finish();
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(projectPos+1)+" AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                            intent.putExtra("projectPos",projectPos+1);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",projectPos+1);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }
                     } else {
-                        Intent intent = new Intent(this, MyVrView.class);
-                        intent.putExtra("projectPos", 0);
-                        intent.putExtra("pos", 0);
-                        startActivity(intent);
-                        finish();
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                            intent.putExtra("projectPos",0);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",0);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }
                     }
                 }
         } else{
@@ -158,7 +223,7 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
 
     @Override
     public void onCardboardTrigger() {
-        Log.e(TAG, "onCardboardTrigger");
+        Log.e("onCardboardTrigger", "onCardboardTrigger");
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         v.vibrate(100);
 
@@ -178,28 +243,61 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
         int COUNT_2 = cursor2.getInt(0);
         cursor2.close();
         if (pos + 1 < COUNT_2) {
-            Intent intent = new Intent(MyVrView.this, MyVrView.class);
-            intent.putExtra("projectPos", projectPos);
-            intent.putExtra("pos", pos + 1);
-            startActivity(intent);
-            finish();
+            Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+projectPos+" AND pos="+(pos+1)+";",null);
+            c.moveToFirst();
+            String type = c.getString(0);
+            if(type.equals("image")){
+                Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                intent.putExtra("projectPos",projectPos);
+                intent.putExtra("pos",pos+1);
+                startActivity(intent);
+                finish();
+            }else if(type.equals("video")){
+                Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                intent.putExtra("projectPos",projectPos);
+                intent.putExtra("pos",pos+1);
+                startActivity(intent);
+                finish();
+            }
         } else {
             Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
             cursor1.moveToFirst();
             int COUNT_1 = cursor1.getInt(0);
             cursor1.close();
             if (projectPos + 1 < COUNT_1) {
-                Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                intent.putExtra("projectPos", projectPos + 1);
-                intent.putExtra("pos", 0);
-                startActivity(intent);
-                finish();
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(projectPos+1)+" AND pos=0;",null);
+                c.moveToFirst();
+                String type = c.getString(0);
+                if(type.equals("image")){
+                    Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                    intent.putExtra("projectPos",projectPos+1);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
+                }else if(type.equals("video")){
+                    Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                    intent.putExtra("projectPos",projectPos+1);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
+                }
             } else {
-                Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                intent.putExtra("projectPos", 0);
-                intent.putExtra("pos", 0);
-                startActivity(intent);
-                finish();
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                c.moveToFirst();
+                String type = c.getString(0);
+                if(type.equals("image")){
+                    Intent intent = new Intent(MyVrView.this, MyVrView.class);
+                    intent.putExtra("projectPos",0);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
+                }else if(type.equals("video")){
+                    Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                    intent.putExtra("projectPos",0);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
+                }
             }
         }
 

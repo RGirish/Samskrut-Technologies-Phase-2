@@ -18,6 +18,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -82,6 +83,13 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         super.onCreate(savedInstanceState);
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        /*File dir = getFilesDir();
+        File file = new File(dir, "0_2.jpg");
+        file.delete();
+        file = new File(dir, "0_3.jpg");
+        file.delete();*/
 
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -161,7 +169,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             {
                                 ValueAnimator realSmoothScrollAnimation =
                                         ValueAnimator.ofInt(mainScrollView.getScrollY(), mainScrollView.getScrollY() + dpToPx(360 - scrollYDp % 360));
-                                realSmoothScrollAnimation.setDuration(1000);
+                                realSmoothScrollAnimation.setDuration(800);
                                 realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
                                     @Override
                                     public void onAnimationUpdate(ValueAnimator animation)
@@ -182,7 +190,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             {
                                 ValueAnimator realSmoothScrollAnimation =
                                         ValueAnimator.ofInt(mainScrollView.getScrollY(), 0);
-                                realSmoothScrollAnimation.setDuration(1000);
+                                realSmoothScrollAnimation.setDuration(800);
                                 realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
                                     @Override
                                     public void onAnimationUpdate(ValueAnimator animation)
@@ -201,10 +209,20 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                     }
                     if (d == 2){
                         //Open current project in list
-                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
-                        intent.putExtra("projectPos",currentProject);
-                        intent.putExtra("pos",0);
-                        startActivity(intent);
+                        Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                            intent.putExtra("projectPos",currentProject);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(ProjectList.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",currentProject);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                        }
                     }
                     d = 0;
                 }
@@ -220,12 +238,14 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     protected void onPause() {
         super.onPause();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         senSensorManager.unregisterListener(this);
     }
 
     @Override
     public void onResume(){
         super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         tts.stop();
         View decorView = getWindow().getDecorView();
@@ -274,6 +294,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void download(){
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
+        Log.e("download","download");
 
         /*
         db.execSQL("DELETE FROM projects_prev;");
@@ -327,15 +348,15 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                     final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
                     query.orderByAscending("projectPos");
                     query.addAscendingOrder("pos");
-                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts", "updatedAt"));
+                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts", "mediaType"));
                     query.findInBackground(new FindCallback<ParseObject>() {
                         public void done(List<ParseObject> objects, ParseException e) {
                             if (e == null) {
                                 for (ParseObject ob : objects) {
-                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getUpdatedAt() + "');");
-                                    Log.e("QUERY","INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getUpdatedAt() + "');");
+                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
+                                    Log.e("QUERY","INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
                                 }
-                                downloadImages();
+                                downloadProjectsThumbnails();
                             } else {
                                 Log.e("PARSE", "Error: " + e.getMessage());
                             }
@@ -349,7 +370,9 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         });
     }
 
-    public void downloadImages() {
+    public void downloadProjectsThumbnails() {
+
+        Log.e("downloadImages","downloadImages");
 
         //set notavailablelist for projects
         Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
@@ -365,8 +388,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                 int pos = cursor.getInt(0);
                 if (!exists(pos + "_th.jpg")) {
                     notAvailableList_th.add(pos);
-                }else{
-                    availableList_th.add(pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -380,27 +401,24 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects;",null);
         cursor.moveToFirst();
         COUNT = cursor.getInt(0);
-        notAvailableList = new ArrayList<>(COUNT);
+        notAvailableList = new ArrayList<String>(COUNT);
         cursor.close();
 
         cursor = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects ORDER BY projectPos,pos;", null);
-        try{
+
             cursor.moveToFirst();
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                String timestamp = cursor.getString(2);
                 if (!exists(projectPos + "_" + pos + ".jpg")) {
                     notAvailableList.add(projectPos + "_" + pos);
-                }else{
-                    availableList.add(projectPos + "_" + pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
                     break;
                 }
             }
-        }catch (Exception e){}
+
         cursor.close();
 
 
@@ -409,7 +427,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             dialog1.setMessage("Downloading Thumbnail 1/" + notAvailableList_th.size());
         }else{
             if(notAvailableList.size()>0){
-                downloadImages2();
+                downloadSubProjectsMedia();
             }else{
                 dialog1.dismiss();
                 displayEverything();
@@ -432,7 +450,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                                     if (CURR_COUNT_th == notAvailableList_th.size()) {
 
                                         if(notAvailableList.size()>0){
-                                            downloadImages2();
+                                            downloadSubProjectsMedia();
                                         }else{
                                             dialog1.dismiss();
                                             displayEverything();
@@ -453,9 +471,10 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     }
 
-    public void downloadImages2(){
+    public void downloadSubProjectsMedia(){
 
-        dialog1.setMessage("Downloading Panorama 1/"+notAvailableList.size());
+        Log.e("downloadImages2","downloadImages2");
+        dialog1.setMessage("Downloading Panorama 1/" + notAvailableList.size());
         if(notAvailableList.size()==0){
             dialog1.dismiss();
             displayEverything();
@@ -471,11 +490,17 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             query.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
                     if (e == null) {
-                        ParseFile myFile = objects.get(0).getParseFile("photoSphere");
+                        final ParseFile myFile = objects.get(0).getParseFile("photoSphere");
                         myFile.getDataInBackground(new GetDataCallback() {
                             public void done(byte[] data, ParseException e) {
                                 if (e == null) {
-                                    writeFile(data, projectPos + "_" + pos + ".jpg");
+                                    if(myFile.getName().endsWith("jpg")){
+                                        Log.e("FILENAME", "jpg");
+                                        writeFile(data, projectPos + "_" + pos + ".jpg");
+                                    }else if(myFile.getName().endsWith("mp4")){
+                                        Log.e("FILENAME", "mp4");
+                                        writeFile(data, projectPos + "_" + pos + ".mp4");
+                                    }
                                     CURR_COUNT++;
                                     dialog1.setMessage("Downloading Panorama "+(CURR_COUNT+1)+"/"+notAvailableList.size());
                                     if (CURR_COUNT == notAvailableList.size()) {
@@ -527,10 +552,21 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Intent intent = new Intent(ProjectList.this, MyVrView.class);
-                        intent.putExtra("projectPos",projectPos);
-                        intent.putExtra("pos",0);
-                        startActivity(intent);
+                        Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+projectPos+" AND pos=0;",null);
+                        c.moveToFirst();
+                        String type = c.getString(0);
+                        if(type.equals("image")){
+                            Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                            intent.putExtra("projectPos",projectPos);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                        }else if(type.equals("video")){
+                            Intent intent = new Intent(ProjectList.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",projectPos);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                        }
+
                     }
                 });
                 ll.addView(imageButton);
@@ -551,17 +587,22 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void createTables() {
 
+        /*db.execSQL("DROP TABLE projects;");
+        db.execSQL("DROP TABLE subProjects;");
+        db.execSQL("DROP TABLE projects_prev;");
+        db.execSQL("DROP TABLE subProjects_prev;");*/
+
         try{
             db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp String);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, timestamp DATE);");
+            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp DATE);");
         }catch(Exception e){}
         try{
             db.execSQL("CREATE TABLE projects_prev(pos NUMBER,timestamp String);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE subProjects_prev(projectPos NUMBER, pos NUMBER, tts TEXT, timestamp DATE);");
+            db.execSQL("CREATE TABLE subProjects_prev(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp DATE);");
         }catch(Exception e){}
     }
 
@@ -621,36 +662,28 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             tts.stop();
             tts.shutdown();
         }
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onDestroy();
     }
 
     @Override
     public void onCardboardTrigger(){
 
-        dd++;
-        Handler handler = new Handler();
-        Runnable r = new Runnable() {
-
-            @Override
-            public void run() {
-                if (dd == 1) {
-                    Toast.makeText(ProjectList.this, "Single", Toast.LENGTH_SHORT).show();
-                }
-                if (dd == 2) {
-                    Toast.makeText(ProjectList.this, "Double", Toast.LENGTH_SHORT).show();
-                }
-                dd = 0;
-            }
-        };
-        if (dd == 1) {
-            handler.postDelayed(r, 500);
-        }
-
         if(!((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8)) && !((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -6 || Zint == -7 || Zint == -8))){
-            Intent intent = new Intent(ProjectList.this, MyVrView.class);
-            intent.putExtra("projectPos",currentProject);
-            intent.putExtra("pos",0);
-            startActivity(intent);
+            Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
+            c.moveToFirst();
+            String type = c.getString(0);
+            if(type.equals("image")){
+                Intent intent = new Intent(ProjectList.this, MyVrView.class);
+                intent.putExtra("projectPos",currentProject);
+                intent.putExtra("pos",0);
+                startActivity(intent);
+            }else if(type.equals("video")){
+                Intent intent = new Intent(ProjectList.this, MyVrVideoView.class);
+                intent.putExtra("projectPos",currentProject);
+                intent.putExtra("pos",0);
+                startActivity(intent);
+            }
         }
     }
 
@@ -663,9 +696,9 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                 Yint = (int) sensorEvent.values[1];
                 Zint = (int) sensorEvent.values[2];
 
-                Log.e("COORDINATES", Xint + " " + Yint + " " + Zint);
+                //Log.e("COORDINATES", Xint + " " + Yint + " " + Zint);
 
-                if ((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8)) {
+                if (((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8))) {
 
                     Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                     v.vibrate(200);
@@ -683,7 +716,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                         {
                             ValueAnimator realSmoothScrollAnimation =
                                     ValueAnimator.ofInt(mainScrollView.getScrollY(), mainScrollView.getScrollY() + dpToPx(360 - scrollYDp % 360));
-                            realSmoothScrollAnimation.setDuration(1000);
+                            realSmoothScrollAnimation.setDuration(800);
                             realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
                                 @Override
                                 public void onAnimationUpdate(ValueAnimator animation)
@@ -704,7 +737,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
                         {
                             ValueAnimator realSmoothScrollAnimation = ValueAnimator.ofInt(mainScrollView.getScrollY(), 0);
-                            realSmoothScrollAnimation.setDuration(1000);
+                            realSmoothScrollAnimation.setDuration(800);
                             realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
                                 @Override
                                 public void onAnimationUpdate(ValueAnimator animation)
@@ -720,6 +753,59 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             mainScrollView.smoothScrollTo(0,0);
                         }
                     }
+                }else if (((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -6 || Zint == -7 || Zint == -8))) {
+
+                    Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    v.vibrate(200);
+
+                    if (currentProject - 1 >= 0) {
+                        currentProject--;
+                        int scrollYPx = mainScrollView.getScrollY();
+                        int scrollYDp = pxToDp(scrollYPx);
+                        int val = mainScrollView.getScrollY() - dpToPx(scrollYDp % 360);
+                        if(dpToPx(scrollYDp % 360)==0)val=mainScrollView.getScrollY()-dpToPx(360);
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                        {
+                            ValueAnimator realSmoothScrollAnimation =
+                                    ValueAnimator.ofInt(mainScrollView.getScrollY(), val);
+                            realSmoothScrollAnimation.setDuration(800);
+                            realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation) {
+                                    int scrollTo = (Integer) animation.getAnimatedValue();
+                                    mainScrollView.scrollTo(0, scrollTo);
+                                }
+                            });
+                            realSmoothScrollAnimation.start();
+                        }else{
+                            mainScrollView.smoothScrollTo(0, mainScrollView.getScrollY() - dpToPx(scrollYDp % 360));
+                        }
+                    }else{
+                        Cursor cursor = ProjectList.db.rawQuery("SELECT MAX(pos) FROM projects;", null);
+                        cursor.moveToFirst();
+                        int MAX = cursor.getInt(0);
+                        cursor.close();
+                        currentProject = MAX;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+                        {
+                            ValueAnimator realSmoothScrollAnimation = ValueAnimator.ofInt(mainScrollView.getScrollY(), dpToPx(360*(currentProject)));
+                            realSmoothScrollAnimation.setDuration(800);
+                            realSmoothScrollAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation)
+                                {
+                                    int scrollTo = (Integer) animation.getAnimatedValue();
+                                    mainScrollView.scrollTo(0, scrollTo);
+                                }
+                            });
+
+                            realSmoothScrollAnimation.start();
+                        }
+                        else{
+                            mainScrollView.smoothScrollTo(0, dpToPx(360*(currentProject)));
+                        }
+                    }
                 }
             }
             FLAG = false;
@@ -728,7 +814,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                 public void run() {
                     FLAG = true;
                 }
-            }, 1000);
+            }, 1300);
         }
     }
 
