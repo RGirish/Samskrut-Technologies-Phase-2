@@ -24,16 +24,16 @@
         <activity
             android:name=".Flash"
             android:label="@string/app_name"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".ProjectList"
-            android:screenOrientation="landscape"/>
+            android:screenOrientation="landscape" />
         <activity
             android:name=".MyVrView"
             android:screenOrientation="landscape" />
@@ -44,6 +44,12 @@
         <meta-data
             android:name="com.crashlytics.ApiKey"
             android:value="d2e56a208ecc3bb49afc56cd232043b8ab1976f1" />
+
+        <activity
+            android:screenOrientation="landscape"
+            android:name=".Countdown"
+            android:label="@string/title_activity_countdown" >
+        </activity>
     </application>
 
 </manifest>

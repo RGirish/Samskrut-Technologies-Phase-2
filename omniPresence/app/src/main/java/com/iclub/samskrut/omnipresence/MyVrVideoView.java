@@ -14,7 +14,6 @@ import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.OrientationEventListener;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -124,8 +123,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 	    	_pfview.handleOrientationChange();
 	}
 
-    public void showControls(boolean bShow)
-    {
+    public void showControls(boolean bShow){
     	int visibility = View.GONE;
     	
     	if (bShow)
@@ -354,10 +352,9 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
             int COUNT_1 = cursor1.getInt(0);
             cursor1.close();
             if (_projectPos + 1 < COUNT_1) {
-                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(_projectPos+1)+" AND pos=0;",null);
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=" + (_projectPos + 1) + " AND pos=0;", null);
                 c.moveToFirst();
                 String type = c.getString(0);
-                c.close();
                 if(type.equals("image")){
                     Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                     intent.putExtra("projectPos",_projectPos+1);

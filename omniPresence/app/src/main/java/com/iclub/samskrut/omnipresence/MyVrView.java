@@ -91,36 +91,36 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                     int COUNT_1 = cursor1.getInt(0);
                     cursor1.close();
                     if (projectPos + 1 < COUNT_1) {
-                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(projectPos+1)+" AND pos=0;",null);
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=" + (projectPos + 1) + " AND pos=0;", null);
                         c.moveToFirst();
                         String type = c.getString(0);
-                        if(type.equals("image")){
+                        if (type.equals("image")) {
                             Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                            intent.putExtra("projectPos",projectPos+1);
-                            intent.putExtra("pos",0);
+                            intent.putExtra("projectPos", projectPos + 1);
+                            intent.putExtra("pos", 0);
                             startActivity(intent);
                             finish();
-                        }else if(type.equals("video")){
+                        } else if (type.equals("video")) {
                             Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
-                            intent.putExtra("projectPos",projectPos+1);
-                            intent.putExtra("pos",0);
+                            intent.putExtra("projectPos", projectPos + 1);
+                            intent.putExtra("pos", 0);
                             startActivity(intent);
                             finish();
                         }
                     } else {
-                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;", null);
                         c.moveToFirst();
                         String type = c.getString(0);
-                        if(type.equals("image")){
+                        if (type.equals("image")) {
                             Intent intent = new Intent(MyVrView.this, MyVrView.class);
-                            intent.putExtra("projectPos",0);
-                            intent.putExtra("pos",0);
+                            intent.putExtra("projectPos", 0);
+                            intent.putExtra("pos", 0);
                             startActivity(intent);
                             finish();
-                        }else if(type.equals("video")){
+                        } else if (type.equals("video")) {
                             Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
-                            intent.putExtra("projectPos",0);
-                            intent.putExtra("pos",0);
+                            intent.putExtra("projectPos", 0);
+                            intent.putExtra("pos", 0);
                             startActivity(intent);
                             finish();
                         }

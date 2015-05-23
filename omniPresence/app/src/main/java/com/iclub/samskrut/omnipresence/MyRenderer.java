@@ -12,6 +12,8 @@ import org.rajawali3d.materials.textures.Texture;
 import org.rajawali3d.math.vector.Vector3;
 import org.rajawali3d.primitives.Sphere;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
@@ -38,6 +40,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             Log.e("MyRenderer filenotfound",projectPos + "_" + pos + ".jpg");
         }
         Bitmap bitmap = BitmapFactory.decodeStream(is);
+        //Bitmap bitmap = decodeFile(is);
+        //Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
         Sphere sphere = createPhotoSphereWithTexture(new Texture("photo", bitmap));
 
         getCurrentScene().addChild(sphere);
@@ -62,5 +66,20 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         sphere.setMaterial(material);
 
         return sphere;
+    }
+
+    // Decodes image and scales it to reduce memory consumption
+    private Bitmap decodeFile(InputStream is) {
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeStream(is, null, o);
+        final int REQUIRED_SIZE=1024;
+        int scale = 1;
+        while(o.outWidth / scale / 2 >= REQUIRED_SIZE && o.outHeight / scale / 2 >= REQUIRED_SIZE) {
+            scale *= 2;
+        }
+        BitmapFactory.Options o2 = new BitmapFactory.Options();
+        o2.inSampleSize = scale;
+        return BitmapFactory.decodeStream(is, null, o2);
     }
 }

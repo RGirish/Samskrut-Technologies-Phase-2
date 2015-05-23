@@ -18,7 +18,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
-import android.os.PowerManager;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -65,13 +64,13 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
     SwipeRefreshLayout swipeLayout;
     public static TextToSpeech tts;
     int COUNT_th=0,CURR_COUNT_th=0;
-    ArrayList<Integer> notAvailableList_th,availableList_th;
+    ArrayList<Integer> notAvailableList_th;
     int COUNT=0,CURR_COUNT=0;
-    ArrayList<String> notAvailableList,availableList;
+    ArrayList<String> notAvailableList;
     ScrollView mainScrollView;
     LinearLayout mainll;
     static int currentProject;
-    int d=0,dd=0;
+    int d=0;
     int Xint,Yint,Zint;
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
@@ -84,12 +83,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        /*File dir = getFilesDir();
-        File file = new File(dir, "0_2.jpg");
-        file.delete();
-        file = new File(dir, "0_3.jpg");
-        file.delete();*/
 
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -294,7 +287,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void download(){
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
-        Log.e("download","download");
+        Log.e("download", "download");
 
         /*
         db.execSQL("DELETE FROM projects_prev;");
@@ -372,7 +365,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void downloadProjectsThumbnails() {
 
-        Log.e("downloadImages","downloadImages");
+        Log.e("downloadProjectsTh","downloadProjectsTh");
 
         //set notavailablelist for projects
         Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
@@ -410,7 +403,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                if (!exists(projectPos + "_" + pos + ".jpg")) {
+                if (!exists(projectPos + "_" + pos + ".jpg") && !exists(projectPos + "_" + pos + ".mp4")) {
                     notAvailableList.add(projectPos + "_" + pos);
                 }
                 cursor.moveToNext();
@@ -473,7 +466,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void downloadSubProjectsMedia(){
 
-        Log.e("downloadImages2","downloadImages2");
+        Log.e("downloadSubProjectsMedia","downloadSubProjectsMedia");
         dialog1.setMessage("Downloading Panorama 1/" + notAvailableList.size());
         if(notAvailableList.size()==0){
             dialog1.dismiss();
@@ -604,10 +597,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         try{
             db.execSQL("CREATE TABLE subProjects_prev(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp DATE);");
         }catch(Exception e){}
-    }
-
-    public void function(View view) {
-        Toast.makeText(this,"Hello",Toast.LENGTH_SHORT).show();
     }
 
     public boolean checkConnection(){
