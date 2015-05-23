@@ -45,7 +45,6 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
 
     public static SQLiteDatabase db;
-    public static int projectCount=0;
     ProgressDialog dialog1;
     SwipeRefreshLayout swipeLayout;
     int COUNT=0,CURR_COUNT=0;
@@ -69,10 +68,9 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
         swipeLayout.setOnRefreshListener(this);
-        swipeLayout.setColorScheme(android.R.color.holo_green_dark, android.R.color.holo_orange_dark);
+        swipeLayout.setColorScheme(android.R.color.holo_orange_dark, android.R.color.holo_red_dark);
 
         displayEverything();
-
     }
 
     @Override
@@ -191,12 +189,12 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         mainll.removeAllViews();
 
 
-        final Cursor cursor = db.rawQuery("SELECT pos,name,desc,url FROM projects ORDER BY pos;",null);
+        Cursor cursor = db.rawQuery("SELECT pos,name,desc,url FROM projects ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
             while(true){
-                projectCount++;
                 final int pos = cursor.getInt(0);
+                final String url = cursor.getString(3);
 
                 LinearLayout ll = new LinearLayout(this);
                 ll.setOrientation(LinearLayout.VERTICAL);
@@ -209,14 +207,15 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 InputStream is = openFileInput(pos + ".jpg");
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
                 imageButton.setImageBitmap(bitmap);
-                params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                imageButton.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)getResources().getDimension(R.dimen.dp200));
                 params.setMargins(0, (int) getResources().getDimension(R.dimen.dp5), 0, (int) getResources().getDimension(R.dimen.dp5));
                 imageButton.setLayoutParams(params);
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         Intent intent = new Intent(MainActivity.this, MyWebView.class);
-                        intent.putExtra("url",cursor.getString(2));
+                        intent.putExtra("url", url);
                         startActivity(intent);
                     }
                 });
@@ -259,7 +258,6 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         }catch (Exception e){}
 
         cursor.close();
-
 
     }
 

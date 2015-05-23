@@ -26,6 +26,7 @@
         <activity
             android:screenOrientation="landscape"
             android:name=".MyWebView"
+            android:theme="@style/AppThemeNoAb"
             android:label="@string/title_activity_my_web_view" >
         </activity>
     </application>
