@@ -31,7 +31,6 @@ public class Countdown extends ActionBarActivity {
                 finish();
             }
         }.start();
-
     }
 
     private void setFullscreen(boolean fullscreen) {

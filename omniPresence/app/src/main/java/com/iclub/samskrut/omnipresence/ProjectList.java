@@ -64,9 +64,9 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
     SwipeRefreshLayout swipeLayout;
     public static TextToSpeech tts;
     int COUNT_th=0,CURR_COUNT_th=0;
-    ArrayList<Integer> notAvailableList_th;
+    ArrayList<Integer> notAvailableList_th,toBeDeletedList_th;
     int COUNT=0,CURR_COUNT=0;
-    ArrayList<String> notAvailableList;
+    ArrayList<String> notAvailableList,toBeDeletedList;
     ScrollView mainScrollView;
     LinearLayout mainll;
     static int currentProject;
@@ -289,43 +289,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
         Log.e("download", "download");
 
-        /*
-        db.execSQL("DELETE FROM projects_prev;");
-        db.execSQL("DELETE FROM subProjects_prev;");
-
-        Cursor cursor = db.rawQuery("SELECT * FROM projects", null);
-        cursor.moveToFirst();
-
-        while(true){
-            int pos = cursor.getInt(0);
-            String ts = cursor.getString(1);
-            db.execSQL("INSERT INTO projects_prev VALUES("+pos+",'"+ts+"');");
-            cursor.moveToNext();
-            if(cursor.isAfterLast()){
-                break;
-            }
-        }
-
-        cursor = db.rawQuery("SELECT * FROM projects", null);
-        cursor.moveToFirst();
-
-        while(true){
-            int projectPos = cursor.getInt(0);
-            int pos = cursor.getInt(1);
-            String tts = cursor.getString(2);
-            String ts = cursor.getString(3);
-            db.execSQL("INSERT INTO subProjects_prev VALUES("+projectPos+","+pos+",'"+tts+"','"+ts+"');");
-            cursor.moveToNext();
-            if(cursor.isAfterLast()){
-                break;
-            }
-        }
-        cursor.close();
-        */
-
-
-        db.execSQL("DELETE FROM projects;");
-        db.execSQL("DELETE FROM subProjects;");
+        //db.execSQL("DELETE FROM projects;");
+        //db.execSQL("DELETE FROM subProjects;");
 
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
         query.orderByAscending("pos");
@@ -334,8 +299,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
-                        Log.e("QUERY","INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        db.execSQL("INSERT INTO projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        Log.e("QUERY","INSERT INTO projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
                     }
 
                     final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
@@ -346,8 +311,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                         public void done(List<ParseObject> objects, ParseException e) {
                             if (e == null) {
                                 for (ParseObject ob : objects) {
-                                    db.execSQL("INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
-                                    Log.e("QUERY","INSERT INTO subProjects VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
+                                    db.execSQL("INSERT INTO subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
+                                    Log.e("QUERY","INSERT INTO subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
                                 }
                                 downloadProjectsThumbnails();
                             } else {
@@ -367,20 +332,59 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
         Log.e("downloadProjectsTh","downloadProjectsTh");
 
-        //set notavailablelist for projects
-        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;",null);
+        //SET NOTAVAILABLELIST FOR PROJECTS
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects_temp;",null);
         cursor.moveToFirst();
         COUNT_th = cursor.getInt(0);
         notAvailableList_th = new ArrayList<>(COUNT_th);
+        toBeDeletedList_th = new ArrayList<>(COUNT_th);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;", null);
+        cursor = db.rawQuery("SELECT pos,timestamp FROM projects_temp ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
                 if (!exists(pos + "_th.jpg")) {
+                    //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
                     notAvailableList_th.add(pos);
+                }
+
+                Cursor c = db.rawQuery("SELECT pos,timestamp FROM projects WHERE pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                    String currentTime = c.getString(1);
+                    String updatedTime = cursor.getString(1);
+                    if(!currentTime.equals(updatedTime)){
+                        //the item has been modified
+                        if(!notAvailableList_th.contains(pos)) notAvailableList_th.add(pos);
+                    }
+                }catch (Exception e){
+                    //it's a new item and it has already been added to the list
+                }
+
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+
+        //SET TOBEDELETEDLIST FOR PROJECTS
+        cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int pos = cursor.getInt(0);
+                Cursor c = db.rawQuery("SELECT pos FROM projects_temp WHERE pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                }catch (Exception e){
+                    toBeDeletedList_th.add(pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -389,6 +393,21 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             }
         }catch (Exception e){}
         cursor.close();
+
+
+String s="";
+        for(int i: notAvailableList_th){
+            s= s+ (i+" ");
+        }
+        Toast.makeText(this,s,Toast.LENGTH_LONG).show();
+
+        s="";
+        for(int i: toBeDeletedList_th){
+            s= s+ (i+" ");
+        }
+        Toast.makeText(this,s,Toast.LENGTH_LONG).show();
+
+
 
         //set notavailablelist for subprojects
         cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects;",null);
@@ -466,7 +485,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void downloadSubProjectsMedia(){
 
-        Log.e("downloadSubProjectsMedia","downloadSubProjectsMedia");
+        Log.e("SubProjectsMedia","SubProjectsMedia");
         dialog1.setMessage("Downloading Panorama 1/" + notAvailableList.size());
         if(notAvailableList.size()==0){
             dialog1.dismiss();
@@ -580,22 +599,26 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void createTables() {
 
-        /*db.execSQL("DROP TABLE projects;");
-        db.execSQL("DROP TABLE subProjects;");
-        db.execSQL("DROP TABLE projects_prev;");
-        db.execSQL("DROP TABLE subProjects_prev;");*/
+        try {
+            db.execSQL("DROP TABLE projects;");
+            db.execSQL("DROP TABLE subProjects;");
+            db.execSQL("DROP TABLE projects_prev;");
+            db.execSQL("DROP TABLE subProjects_prev;");
+            db.execSQL("DROP TABLE projects_temp;");
+            db.execSQL("DROP TABLE subProjects_temp;");
+        } catch (Exception e){}
 
         try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp String);");
+            db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp TEXT);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp DATE);");
+            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE projects_prev(pos NUMBER,timestamp String);");
+            db.execSQL("CREATE TABLE projects_temp(pos NUMBER,timestamp TEXT);");
         }catch(Exception e){}
         try{
-            db.execSQL("CREATE TABLE subProjects_prev(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp DATE);");
+            db.execSQL("CREATE TABLE subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
         }catch(Exception e){}
     }
 
@@ -678,14 +701,16 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        if(FLAG){
-            Sensor mySensor = sensorEvent.sensor;
-            if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                Xint = (int) sensorEvent.values[0];
-                Yint = (int) sensorEvent.values[1];
-                Zint = (int) sensorEvent.values[2];
 
-                //Log.e("COORDINATES", Xint + " " + Yint + " " + Zint);
+        Sensor mySensor = sensorEvent.sensor;
+        if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            Xint = (int) sensorEvent.values[0];
+            Yint = (int) sensorEvent.values[1];
+            Zint = (int) sensorEvent.values[2];
+
+            //Log.e("COORDINATES", Xint + " " + Yint + " " + Zint);
+
+            if(FLAG){
 
                 if (((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8))) {
 
@@ -742,6 +767,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             mainScrollView.smoothScrollTo(0,0);
                         }
                     }
+                    FLAG = false;
+
                 }else if (((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -6 || Zint == -7 || Zint == -8))) {
 
                     Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -795,15 +822,14 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             mainScrollView.smoothScrollTo(0, dpToPx(360*(currentProject)));
                         }
                     }
+                    FLAG = false;
                 }
-            }
-            FLAG = false;
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
+
+            }else{
+                if(   (Xint == 8 || Xint == 9 || Xint == 10) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -1 || Zint == 0 || Zint == 1)   ){
                     FLAG = true;
                 }
-            }, 1300);
+            }
         }
     }
 

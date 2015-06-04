@@ -21,7 +21,7 @@ public class Flash extends AppCompatActivity {
 
         setFullscreen(true);
 
-        final TextView skip = (TextView)findViewById(R.id.skip);
+        /*final TextView skip = (TextView)findViewById(R.id.skip);
         skip.setText("<Skip>");
         skip.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -59,7 +59,11 @@ public class Flash extends AppCompatActivity {
                 }
                 pos++;
             }
-        });
+        });*/
+
+        Intent intent = new Intent(this,ProjectList.class);
+        startActivity(intent);
+        finish();
 
     }
 
