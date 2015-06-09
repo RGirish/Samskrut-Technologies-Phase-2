@@ -395,16 +395,18 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         cursor.close();
 
 
-String s="";
+        String s="";
         for(int i: notAvailableList_th){
             s= s+ (i+" ");
         }
+        Log.e("notAvailableList_th",s);
         Toast.makeText(this,s,Toast.LENGTH_LONG).show();
 
         s="";
         for(int i: toBeDeletedList_th){
             s= s+ (i+" ");
         }
+        Log.e("toBeDeletedList_th",s);
         Toast.makeText(this,s,Toast.LENGTH_LONG).show();
 
 
