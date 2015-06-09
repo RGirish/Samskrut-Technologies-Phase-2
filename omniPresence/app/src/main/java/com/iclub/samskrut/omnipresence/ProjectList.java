@@ -289,9 +289,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
         Log.e("download", "download");
 
-        //db.execSQL("DELETE FROM projects;");
-        //db.execSQL("DELETE FROM subProjects;");
-
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
         query.orderByAscending("pos");
         query.selectKeys( Arrays.asList("pos","updatedAt"));
@@ -400,41 +397,156 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             s= s+ (i+" ");
         }
         Log.e("notAvailableList_th",s);
-        Toast.makeText(this,s,Toast.LENGTH_LONG).show();
-
         s="";
         for(int i: toBeDeletedList_th){
             s= s+ (i+" ");
         }
         Log.e("toBeDeletedList_th",s);
-        Toast.makeText(this,s,Toast.LENGTH_LONG).show();
 
 
 
-        //set notavailablelist for subprojects
-        cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects;",null);
+
+
+
+        //SET NOTAVAILABLELIST FOR SUBPROJECTS
+        cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects_temp;",null);
         cursor.moveToFirst();
         COUNT = cursor.getInt(0);
-        notAvailableList = new ArrayList<String>(COUNT);
+        notAvailableList = new ArrayList<>(COUNT);
+        toBeDeletedList = new ArrayList<>(COUNT);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects ORDER BY projectPos,pos;", null);
-
+        cursor = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects_temp ORDER BY projectPos,pos;", null);
+        try{
             cursor.moveToFirst();
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
                 if (!exists(projectPos + "_" + pos + ".jpg") && !exists(projectPos + "_" + pos + ".mp4")) {
+                    //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
                     notAvailableList.add(projectPos + "_" + pos);
                 }
+
+                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                    String currentTime = c.getString(2);
+                    String updatedTime = cursor.getString(2);
+                    if(!currentTime.equals(updatedTime)){
+                        //the item has been modified
+                        if(!notAvailableList.contains(projectPos + "_" + pos)) notAvailableList.add(projectPos + "_" + pos);
+                    }
+                }catch (Exception e){
+                    //it's a new item and it has already been added to the list
+                }
+                c.close();
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
                     break;
                 }
             }
-
+        }catch (Exception e){}
         cursor.close();
 
+
+        //SET TOBEDELETEDLIST FOR SUBPROJECTS
+        cursor = db.rawQuery("SELECT projectPos,pos FROM subProjects ORDER BY projectPos,pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int projectPos = cursor.getInt(0);
+                int pos = cursor.getInt(1);
+                Cursor c = db.rawQuery("SELECT projectPos,pos FROM subProjects_temp WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                }catch (Exception e){
+                    toBeDeletedList.add(projectPos + "_" + pos);
+                }
+                c.close();
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+
+        s="";
+        for(String i: notAvailableList){
+            s= s+ (i+" ");
+        }
+        Log.e("notAvailableList",s);
+
+        s="";
+        for(String i: toBeDeletedList){
+            s= s+ (i+" ");
+        }
+        Log.e("toBeDeletedList",s);
+
+
+
+        //MOVE FROM TEMP TABLES TO ORIGINAL TABLES
+
+
+        db.execSQL("DELETE FROM projects;");
+        db.execSQL("DELETE FROM subProjects;");
+        cursor = db.rawQuery("SELECT * FROM projects_temp ORDER BY pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int pos = cursor.getInt(0);
+                String ts = cursor.getString(1);
+                db.execSQL("INSERT INTO projects VALUES("+pos+",'"+ts+"');");
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+        cursor = db.rawQuery("SELECT * FROM subProjects_temp ORDER BY projectPos,pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int projectPos = cursor.getInt(0);
+                int pos = cursor.getInt(1);
+                String tts = cursor.getString(2);
+                String mediatype = cursor.getString(3);
+                String ts = cursor.getString(4);
+                db.execSQL("INSERT INTO subProjects VALUES("+projectPos+","+pos+",'"+tts+"','"+mediatype+"','"+ts+"');");
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+        db.execSQL("DELETE FROM projects_temp;");
+        db.execSQL("DELETE FROM subProjects_temp;");
+
+
+        //DELETE FILES IF ANY
+        File dir = getFilesDir();
+        for(int i : toBeDeletedList_th){
+            File file = new File(dir, i+"_th.jpg");
+            file.delete();
+        }
+        for(String i : toBeDeletedList){
+            try {
+                File file = new File(dir, i + ".jpg");
+                file.delete();
+                file = new File(dir, i + ".mp4");
+                file.delete();
+            }catch (Exception e){}
+        }
+
+
+
+
+        //START DOWNLOAD IF ANY
 
 
         if(notAvailableList_th.size()>0){
@@ -601,14 +713,10 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
     public void createTables() {
 
-        try {
-            db.execSQL("DROP TABLE projects;");
-            db.execSQL("DROP TABLE subProjects;");
-            db.execSQL("DROP TABLE projects_prev;");
-            db.execSQL("DROP TABLE subProjects_prev;");
-            db.execSQL("DROP TABLE projects_temp;");
-            db.execSQL("DROP TABLE subProjects_temp;");
-        } catch (Exception e){}
+        /*db.execSQL("DROP TABLE projects;");
+        db.execSQL("DROP TABLE projects_temp;");
+        db.execSQL("DROP TABLE subProjects;");
+        db.execSQL("DROP TABLE subProjects_temp;");*/
 
         try{
             db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp TEXT);");

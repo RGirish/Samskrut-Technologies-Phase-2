@@ -46,9 +46,13 @@
             android:value="d2e56a208ecc3bb49afc56cd232043b8ab1976f1" />
 
         <activity
-            android:screenOrientation="landscape"
             android:name=".Countdown"
-            android:label="@string/title_activity_countdown" >
+            android:label="@string/title_activity_countdown"
+            android:screenOrientation="landscape" >
+        </activity>
+        <activity
+            android:name=".YoutubeStreamActivity"
+            android:label="@string/title_activity_youtube_stream" >
         </activity>
     </application>
 
