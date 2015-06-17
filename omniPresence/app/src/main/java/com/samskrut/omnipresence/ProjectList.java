@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Locale;
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class ProjectList extends CardboardActivity implements SwipeRefreshLayout.OnRefreshListener, TextToSpeech.OnInitListener,CardboardView.StereoRenderer, SensorEventListener {
+public class ProjectList extends CardboardActivity implements TextToSpeech.OnInitListener,CardboardView.StereoRenderer, SensorEventListener {
 
     public static SQLiteDatabase db;
     public static int projectCount=0;
@@ -109,16 +109,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
 
         checkForDownload();
-
-        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
-        swipeLayout.setOnRefreshListener(this);
-        swipeLayout.setColorScheme(android.R.color.holo_green_dark,
-                android.R.color.holo_orange_dark);
-
         displayEverything();
-
         tts = new TextToSpeech(this,this);
-
     }
 
     public int dpToPx(int dp) {
@@ -250,19 +242,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                     | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_FULLSCREEN);
         }
-    }
-
-    @Override
-    public void onRefresh() {
-
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                swipeLayout.setRefreshing(false);
-            }
-        }, 2000);
-
-        download();
     }
 
     public void checkForDownload(){
@@ -521,6 +500,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             }
         }catch (Exception e){}
         cursor.close();
+
+        //CLEAR THE TEMP TABLES
         db.execSQL("DELETE FROM projects_temp;");
         db.execSQL("DELETE FROM subProjects_temp;");
 

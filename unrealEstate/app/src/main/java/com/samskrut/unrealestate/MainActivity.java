@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -20,7 +19,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -29,8 +27,6 @@ import android.widget.Toast;
 import com.crashlytics.android.Crashlytics;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
-import com.parse.Parse;
-import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
@@ -44,32 +40,21 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
 
-    public static SQLiteDatabase db;
     ProgressDialog dialog1;
     SwipeRefreshLayout swipeLayout;
     int COUNT=0,CURR_COUNT=0;
-    ArrayList<Integer> notAvailableList;
+    ArrayList<Integer> notAvailableList,toBeDeletedList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Crashlytics.start(this);
         setContentView(R.layout.activity_main);
-
         getSupportActionBar().setTitle(Html.fromHtml("<font color=\"#ffffff\">unrealEstate</font>"));
-
-        try{ParseCrashReporting.enable(this);}catch (Exception e){}
-        Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
-
-        db = openOrCreateDatabase("unrealestate.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
-        createTables();
-
         checkForDownload();
-
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
         swipeLayout.setOnRefreshListener(this);
         swipeLayout.setColorScheme(android.R.color.holo_orange_dark, android.R.color.holo_red_dark);
-
         displayEverything();
     }
 
@@ -87,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     }
 
     public void checkForDownload() {
-        Cursor cursor = db.rawQuery("SELECT COUNT(name) FROM projects;", null);
+        Cursor cursor = Login.db.rawQuery("SELECT COUNT(name) FROM "+Login.USERNAME+"_projects WHERE username='"+Login.USERNAME+"';", null);
         cursor.moveToFirst();
         int count = cursor.getInt(0);
         if (count == 0) {
@@ -102,15 +87,16 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     public void download(){
         dialog1 = ProgressDialog.show(this, null, "Downloading Data...");
-        db.execSQL("DELETE FROM projects;");
+        Login.db.execSQL("DELETE FROM "+Login.USERNAME+"_projects_temp;");
         final ParseQuery<ParseObject> query = ParseQuery.getQuery("unrealEstate");
+        query.whereEqualTo("username",Login.USERNAME);
         query.orderByAscending("pos");
-        query.selectKeys( Arrays.asList("pos", "name", "description" , "url"));
         query.findInBackground(new FindCallback<ParseObject>() {
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO projects VALUES(" + ob.getNumber("pos") + ",'" + ob.getString("name") + "','" + ob.getString("description") + "','" + ob.getString("url") + "');");
+                        Login.db.execSQL("INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getString("name") + "','" + ob.getString("description") + "','" + ob.getString("url") + "','" + ob.getString("username") + "','" + ob.getUpdatedAt() + "');");
+                        Log.e("QUERY","INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getString("name") + "','" + ob.getString("description") + "','" + ob.getString("url") + "','" + ob.getString("username") + "','" + ob.getUpdatedAt() + "');");
                     }
                     downloadImages();
                 } else {
@@ -122,19 +108,60 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     public void downloadImages(){
 
-        Cursor cursor = db.rawQuery("SELECT COUNT(name) FROM projects;",null);
+
+        //SET NOTAVAILABLELIST
+        Cursor cursor = Login.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects_temp WHERE username='"+Login.USERNAME+"';",null);
         cursor.moveToFirst();
         COUNT = cursor.getInt(0);
         notAvailableList = new ArrayList<>(COUNT);
+        toBeDeletedList = new ArrayList<>(COUNT);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;", null);
+        cursor = Login.db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects_temp WHERE username='"+Login.USERNAME+"' ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                if (!exists(pos + ".jpg")) {
+                if (!exists(Login.USERNAME+"_" + pos + ".jpg")) {
+                    //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
                     notAvailableList.add(pos);
+                }
+
+                Cursor c = Login.db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects WHERE pos="+pos+" AND username='"+Login.USERNAME+"';", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                    String currentTime = c.getString(1);
+                    String updatedTime = cursor.getString(1);
+                    if(!currentTime.equals(updatedTime)){
+                        //the item has been modified
+                        if(!notAvailableList.contains(pos)) notAvailableList.add(pos);
+                    }
+                }catch (Exception e){
+                    //it's a new item and it has already been added to the list
+                }
+
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+
+        //SET TOBEDELETEDLIST
+        cursor = Login.db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects WHERE username='"+Login.USERNAME+"' ORDER BY pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int pos = cursor.getInt(0);
+                Cursor c = Login.db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects_temp WHERE username='"+Login.USERNAME+"' WHERE pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                }catch (Exception e){
+                    toBeDeletedList.add(pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -145,11 +172,66 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         cursor.close();
 
 
+        String s="";
+        for(int i: notAvailableList){
+            s= s+ (i+" ");
+        }
+        Log.e("notAvailableList",s);
+        s="";
+        for(int i: toBeDeletedList){
+            s= s+ (i+" ");
+        }
+        Log.e("toBeDeletedList",s);
+
+
+        //MOVE FROM TEMP TABLE TO ORIGINAL TABLE
+
+
+        Login.db.execSQL("DELETE FROM "+Login.USERNAME+"_projects;");
+        cursor = Login.db.rawQuery("SELECT * FROM "+Login.USERNAME+"_projects_temp ORDER BY pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int pos = cursor.getInt(0);
+                String name = cursor.getString(1);
+                String desc = cursor.getString(2);
+                String url = cursor.getString(3);
+                String username = cursor.getString(4);
+                String ts = cursor.getString(5);
+                Login.db.execSQL("INSERT INTO "+Login.USERNAME+"_projects VALUES("+pos+",'"+name+"','"+desc+"','"+url+"','"+username+"','"+ts+"');");
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+
+
+        //CLEAR THE TEMP TABLE
+        Login.db.execSQL("DELETE FROM "+Login.USERNAME+"_projects_temp WHERE username='"+Login.USERNAME+"';");
+
+
+
+        //DELETE FILES IF ANY
+        File dir = getFilesDir();
+        for(int i : toBeDeletedList){
+            File file = new File(dir, Login.USERNAME+"_" + i + ".jpg");
+            file.delete();
+        }
+
+
+
+        //START DOWNLOADS IF ANY
+
+
         dialog1.setMessage("Downloading Image 1/"+notAvailableList.size());
         CURR_COUNT=0;
         for (final int k : notAvailableList) {
             ParseQuery<ParseObject> query = ParseQuery.getQuery("unrealEstate");
             query.whereEqualTo("pos", k);
+            query.whereEqualTo("username", Login.USERNAME);
             query.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
                     if (e == null) {
@@ -157,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         myFile.getDataInBackground(new GetDataCallback() {
                             public void done(byte[] data, ParseException e) {
                                 if (e == null) {
-                                    writeFile(data, k + ".jpg");
+                                    writeFile(data, Login.USERNAME + "_" + k + ".jpg");
                                     CURR_COUNT++;
                                     dialog1.setMessage("Downloading Image "+(CURR_COUNT+1)+"/"+notAvailableList.size());
                                     if (CURR_COUNT == notAvailableList.size()) {
@@ -188,8 +270,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
         mainll.removeAllViews();
 
-
-        Cursor cursor = db.rawQuery("SELECT pos,name,desc,url FROM projects ORDER BY pos;",null);
+        Cursor cursor = Login.db.rawQuery("SELECT pos,name,desc,url FROM "+Login.USERNAME+"_projects WHERE username='"+Login.USERNAME+"' ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -204,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 ll.setGravity(Gravity.CENTER_HORIZONTAL);
 
                 ImageView imageButton = new ImageView(this);
-                InputStream is = openFileInput(pos + ".jpg");
+                InputStream is = openFileInput(Login.USERNAME + "_" + pos + ".jpg");
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
                 imageButton.setImageBitmap(bitmap);
                 imageButton.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -255,16 +336,12 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                     break;
                 }
             }
-        }catch (Exception e){}
+        }catch (Exception e){
+            Log.e(e.toString(),e.getMessage());
+        }
 
         cursor.close();
 
-    }
-
-    public void createTables(){
-        try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER, name TEXT, desc TEXT, url TEXT);");
-        }catch(Exception e){}
     }
 
     public boolean checkConnection(){
