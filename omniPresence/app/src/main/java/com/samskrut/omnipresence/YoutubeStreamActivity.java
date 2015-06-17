@@ -88,7 +88,7 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
 
         //Text To Speech
         ProjectList.tts.stop();
-        Cursor cursor = ProjectList.db.rawQuery("SELECT tts FROM subProjects WHERE projectPos=" + _projectPos + " AND pos=" + _pos + ";", null);
+        Cursor cursor = ProjectList.db.rawQuery("SELECT tts FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + _projectPos + " AND pos=" + _pos + ";", null);
         cursor.moveToFirst();
         if(android.os.Build.VERSION.SDK_INT >= 21){
             ProjectList.tts.speak(cursor.getString(0), TextToSpeech.QUEUE_FLUSH, null, null);
@@ -295,12 +295,12 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         }
 
         //goes to the next image
-        Cursor cursor2 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM subProjects WHERE projectPos=" + _projectPos + ";", null);
+        Cursor cursor2 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + _projectPos + ";", null);
         cursor2.moveToFirst();
         int COUNT_2 = cursor2.getInt(0);
         cursor2.close();
         if (_pos + 1 < COUNT_2) {
-            Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=" + _projectPos + " AND pos=" + (_pos + 1)+";",null);
+            Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + _projectPos + " AND pos=" + (_pos + 1)+";",null);
             c.moveToFirst();
             String type = c.getString(0);
             c.close();
@@ -318,12 +318,12 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                 finish();
             }
         } else {
-            Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+            Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
             cursor1.moveToFirst();
             int COUNT_1 = cursor1.getInt(0);
             cursor1.close();
             if (_projectPos + 1 < COUNT_1) {
-                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=" + (_projectPos + 1) + " AND pos=0;", null);
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + (_projectPos + 1) + " AND pos=0;", null);
                 c.moveToFirst();
                 String type = c.getString(0);
                 if(type.equals("image")){
@@ -340,7 +340,7 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                     finish();
                 }
             } else {
-                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=0 AND pos=0;",null);
                 c.moveToFirst();
                 String type = c.getString(0);
                 c.close();
@@ -377,12 +377,12 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)){
 
             //goes to the next image
-            Cursor cursor2 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM subProjects WHERE projectPos=" + _projectPos + ";", null);
+            Cursor cursor2 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + _projectPos + ";", null);
             cursor2.moveToFirst();
             int COUNT_2 = cursor2.getInt(0);
             cursor2.close();
             if (_pos + 1 < COUNT_2) {
-                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+_projectPos+" AND pos="+(_pos+1)+";",null);
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+_projectPos+" AND pos="+(_pos+1)+";",null);
                 c.moveToFirst();
                 String type = c.getString(0);
                 if(type.equals("image")){
@@ -399,12 +399,12 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                     finish();
                 }
             } else {
-                Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+                Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
                 cursor1.moveToFirst();
                 int COUNT_1 = cursor1.getInt(0);
                 cursor1.close();
                 if (_projectPos + 1 < COUNT_1) {
-                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+(_projectPos+1)+" AND pos=0;",null);
+                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+(_projectPos+1)+" AND pos=0;",null);
                     c.moveToFirst();
                     String type = c.getString(0);
                     if(type.equals("image")){
@@ -421,7 +421,7 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                         finish();
                     }
                 } else {
-                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
+                    Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=0 AND pos=0;",null);
                     c.moveToFirst();
                     String type = c.getString(0);
                     if(type.equals("image")){

@@ -11,8 +11,11 @@ import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.crashlytics.android.Crashlytics;
 import com.parse.FindCallback;
@@ -21,6 +24,11 @@ import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 public class Login extends AppCompatActivity {
@@ -46,13 +54,37 @@ public class Login extends AppCompatActivity {
             PROJECTS_TABLE_NAME = cursor.getString(0);
             SUBPROJECTS_TABLE_NAME = cursor.getString(1);
             USERNAME = cursor.getString(2);
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_projects(pos NUMBER,timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_projects_temp(pos NUMBER,timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+            }catch(Exception e){}
             if(!(PROJECTS_TABLE_NAME.equals("NONE") && SUBPROJECTS_TABLE_NAME.equals("NONE"))){
                 startActivity(new Intent(Login.this,Splash.class));
                 finish();
             }
         }catch(Exception e){}
 
+        EditText editText = (EditText)findViewById(R.id.password);
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                hideKeyboard();
+                onClickLogin(null);
+                return true;
+            }
+        });
+
     }
+
+
 
     public void downloadLoginDetails(final String username, final String password) {
         db.execSQL("DELETE FROM login;");
@@ -70,18 +102,22 @@ public class Login extends AppCompatActivity {
                         PROJECTS_TABLE_NAME = c.getString(0);
                         SUBPROJECTS_TABLE_NAME = c.getString(1);
                         USERNAME = username;
+                        try{
+                            db.execSQL("CREATE TABLE "+USERNAME+"_projects(pos NUMBER,timestamp TEXT);");
+                        }catch(Exception ee){}
+                        try{
+                            db.execSQL("CREATE TABLE "+USERNAME+"_subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+                        }catch(Exception ee){}
+                        try{
+                            db.execSQL("CREATE TABLE "+USERNAME+"_projects_temp(pos NUMBER,timestamp TEXT);");
+                        }catch(Exception ee){}
+                        try{
+                            db.execSQL("CREATE TABLE "+USERNAME+"_subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+                        }catch(Exception ee){}
                         c.close();
                         dialog.dismiss();
                         Cursor cursor = db.rawQuery("SELECT username FROM session;", null);
                         cursor.moveToFirst();
-                        try {
-                            if (!username.equals(cursor.getString(0))) {
-                                db.execSQL("DELETE FROM projects;");
-                                db.execSQL("DELETE FROM subProjects;");
-                                db.execSQL("DELETE FROM projects_temp;");
-                                db.execSQL("DELETE FROM subProjects_temp;");
-                            }
-                        }catch (Exception eee){}
                         db.execSQL("DELETE FROM session;");
                         db.execSQL("INSERT INTO session VALUES('" + PROJECTS_TABLE_NAME + "','" + SUBPROJECTS_TABLE_NAME + "','" + username + "');");
                         startActivity(new Intent(Login.this, Splash.class));
@@ -121,19 +157,22 @@ public class Login extends AppCompatActivity {
             PROJECTS_TABLE_NAME = c.getString(0);
             SUBPROJECTS_TABLE_NAME = c.getString(1);
             USERNAME = username;
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_projects(pos NUMBER,timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_projects_temp(pos NUMBER,timestamp TEXT);");
+            }catch(Exception e){}
+            try{
+                db.execSQL("CREATE TABLE "+USERNAME+"_subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
+            }catch(Exception e){}
             dialog.dismiss();
 
             Cursor cursor = db.rawQuery("SELECT username FROM session;", null);
             cursor.moveToFirst();
-            try {
-                if (!username.equals(cursor.getString(0))) {
-                    db.execSQL("DELETE FROM projects;");
-                    db.execSQL("DELETE FROM subProjects;");
-                    db.execSQL("DELETE FROM projects_temp;");
-                    db.execSQL("DELETE FROM subProjects_temp;");
-                }
-            }catch (Exception eee){}
-
             db.execSQL("DELETE FROM session;");
             db.execSQL("INSERT INTO session VALUES('"+PROJECTS_TABLE_NAME+"','"+SUBPROJECTS_TABLE_NAME+"','"+USERNAME+"');");
             startActivity(new Intent(Login.this, Splash.class));
@@ -164,18 +203,6 @@ public class Login extends AppCompatActivity {
         try{
             db.execSQL("CREATE TABLE login(username TEXT,password TEXT,projectsTableName TEXT, subProjectsTableName TEXT);");
         }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE projects_temp(pos NUMBER,timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
-        }catch(Exception e){}
     }
 
     public boolean checkConnection(){
@@ -183,6 +210,14 @@ public class Login extends AppCompatActivity {
         NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
         if (activeInfo == null ) return false;
         else return true;
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager inputManager = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        }
     }
 
 }

@@ -59,7 +59,6 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
     public static SQLiteDatabase db;
     public static int projectCount=0;
     ProgressDialog dialog1;
-    SwipeRefreshLayout swipeLayout;
     public static TextToSpeech tts;
     int COUNT_th=0,CURR_COUNT_th=0;
     ArrayList<Integer> notAvailableList_th,toBeDeletedList_th;
@@ -135,7 +134,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                 public void run() {
                     if (d == 1){
                         //Scroll Down to next project in list
-                        Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+                        Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
                         cursor.moveToFirst();
                         int COUNT = cursor.getInt(0);
                         cursor.close();
@@ -188,7 +187,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                     }
                     if (d == 2){
                         //Open current project in list
-                        Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
+                        Cursor c = db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
                         c.moveToFirst();
                         String type = c.getString(0);
                         if(type.equals("image")){
@@ -245,7 +244,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
     }
 
     public void checkForDownload(){
-        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
         cursor.moveToFirst();
         int count = cursor.getInt(0);
         if(count == 0){
@@ -268,8 +267,8 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
-                        Log.e("QUERY","INSERT INTO projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        db.execSQL("INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        Log.e("QUERY","INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
                     }
 
                     final ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.SUBPROJECTS_TABLE_NAME);
@@ -280,8 +279,8 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                         public void done(List<ParseObject> objects, ParseException e) {
                             if (e == null) {
                                 for (ParseObject ob : objects) {
-                                    db.execSQL("INSERT INTO subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
-                                    Log.e("QUERY","INSERT INTO subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
+                                    db.execSQL("INSERT INTO "+Login.USERNAME+"_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
+                                    Log.e("QUERY","INSERT INTO "+Login.USERNAME+"_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','"+ob.getString("mediaType")+"','" + ob.getUpdatedAt() + "');");
                                 }
                                 downloadProjectsThumbnails();
                             } else {
@@ -302,14 +301,14 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
         Log.e("downloadProjectsTh","downloadProjectsTh");
 
         //SET NOTAVAILABLELIST FOR PROJECTS
-        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM projects_temp;",null);
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects_temp;",null);
         cursor.moveToFirst();
         COUNT_th = cursor.getInt(0);
         notAvailableList_th = new ArrayList<>(COUNT_th);
         toBeDeletedList_th = new ArrayList<>(COUNT_th);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT pos,timestamp FROM projects_temp ORDER BY pos;", null);
+        cursor = db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects_temp ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -319,7 +318,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                     notAvailableList_th.add(pos);
                 }
 
-                Cursor c = db.rawQuery("SELECT pos,timestamp FROM projects WHERE pos="+pos+";", null);
+                Cursor c = db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects WHERE pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
@@ -343,12 +342,12 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
 
 
         //SET TOBEDELETEDLIST FOR PROJECTS
-        cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;", null);
+        cursor = db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                Cursor c = db.rawQuery("SELECT pos FROM projects_temp WHERE pos="+pos+";", null);
+                Cursor c = db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects_temp WHERE pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
@@ -381,14 +380,14 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
 
 
         //SET NOTAVAILABLELIST FOR SUBPROJECTS
-        cursor = db.rawQuery("SELECT COUNT(pos) FROM subProjects_temp;",null);
+        cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_subProjects_temp;",null);
         cursor.moveToFirst();
         COUNT = cursor.getInt(0);
         notAvailableList = new ArrayList<>(COUNT);
         toBeDeletedList = new ArrayList<>(COUNT);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM subProjects_temp ORDER BY projectPos,pos;", null);
+        cursor = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM "+Login.USERNAME+"_subProjects_temp ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -401,7 +400,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                         notAvailableList.add(projectPos + "_" + pos);
                     }
                 }
-                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
@@ -428,13 +427,13 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
 
 
         //SET TOBEDELETEDLIST FOR SUBPROJECTS
-        cursor = db.rawQuery("SELECT projectPos,pos FROM subProjects ORDER BY projectPos,pos;", null);
+        cursor = db.rawQuery("SELECT projectPos,pos FROM "+Login.USERNAME+"_subProjects ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                Cursor c = db.rawQuery("SELECT projectPos,pos FROM subProjects_temp WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                Cursor c = db.rawQuery("SELECT projectPos,pos FROM "+Login.USERNAME+"_subProjects_temp WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
@@ -467,15 +466,15 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
         //MOVE FROM TEMP TABLES TO ORIGINAL TABLES
 
 
-        db.execSQL("DELETE FROM projects;");
-        db.execSQL("DELETE FROM subProjects;");
-        cursor = db.rawQuery("SELECT * FROM projects_temp ORDER BY pos;", null);
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_projects;");
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_subProjects;");
+        cursor = db.rawQuery("SELECT * FROM "+Login.USERNAME+"_projects_temp ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
                 String ts = cursor.getString(1);
-                db.execSQL("INSERT INTO projects VALUES("+pos+",'"+ts+"');");
+                db.execSQL("INSERT INTO "+Login.USERNAME+"_projects VALUES("+pos+",'"+ts+"');");
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
                     break;
@@ -483,7 +482,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
             }
         }catch (Exception e){}
         cursor.close();
-        cursor = db.rawQuery("SELECT * FROM subProjects_temp ORDER BY projectPos,pos;", null);
+        cursor = db.rawQuery("SELECT * FROM "+Login.USERNAME+"_subProjects_temp ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -492,7 +491,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                 String tts = cursor.getString(2);
                 String mediatype = cursor.getString(3);
                 String ts = cursor.getString(4);
-                db.execSQL("INSERT INTO subProjects VALUES("+projectPos+","+pos+",'"+tts+"','"+mediatype+"','"+ts+"');");
+                db.execSQL("INSERT INTO "+Login.USERNAME+"_subProjects VALUES("+projectPos+","+pos+",'"+tts+"','"+mediatype+"','"+ts+"');");
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
                     break;
@@ -502,8 +501,8 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
         cursor.close();
 
         //CLEAR THE TEMP TABLES
-        db.execSQL("DELETE FROM projects_temp;");
-        db.execSQL("DELETE FROM subProjects_temp;");
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_projects_temp;");
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_subProjects_temp;");
 
 
         //DELETE FILES IF ANY
@@ -629,7 +628,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
         mainll.removeAllViews();
 
-        Cursor cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;",null);
+        Cursor cursor = db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
             while(true){
@@ -655,7 +654,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+projectPos+" AND pos=0;",null);
+                        Cursor c = db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+projectPos+" AND pos=0;",null);
                         c.moveToFirst();
                         String type = c.getString(0);
                         if(type.equals("image")){
@@ -757,7 +756,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
     public void onCardboardTrigger(){
 
         if(!((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == 6 || Zint == 7 || Zint == 8)) && !((Xint == 6 || Xint == 7 || Xint == 8) && (Yint == -2 || Yint == -1 || Yint == 0 || Yint == 1 || Yint == 2) && (Zint == -6 || Zint == -7 || Zint == -8))){
-            Cursor c = db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
+            Cursor c = db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+currentProject+" AND pos=0;",null);
             c.moveToFirst();
             String type = c.getString(0);
             if(type.equals("image")){
@@ -792,7 +791,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                     Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                     v.vibrate(200);
 
-                    Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
+                    Cursor cursor = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
                     cursor.moveToFirst();
                     int COUNT = cursor.getInt(0);
                     cursor.close();
@@ -873,7 +872,7 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
                             mainScrollView.smoothScrollTo(0, mainScrollView.getScrollY() - dpToPx(scrollYDp % 360));
                         }
                     }else{
-                        Cursor cursor = ProjectList.db.rawQuery("SELECT MAX(pos) FROM projects;", null);
+                        Cursor cursor = ProjectList.db.rawQuery("SELECT MAX(pos) FROM "+Login.USERNAME+"_projects;", null);
                         cursor.moveToFirst();
                         int MAX = cursor.getInt(0);
                         cursor.close();
