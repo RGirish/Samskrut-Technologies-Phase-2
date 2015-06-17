@@ -286,7 +286,7 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                                 if (e == null) {
                                     writeFile(data, Login.USERNAME+"_splash_" + k + ".jpg");
                                     CURR_COUNT++;
-                                    dialog1.setMessage("Downloading Thumbnail "+(CURR_COUNT+1)+"/"+notAvailableList.size());
+                                    dialog1.setMessage("Downloading Splash Image "+(CURR_COUNT+1)+"/"+notAvailableList.size());
                                     if (CURR_COUNT == notAvailableList.size()) {
                                         dialog1.dismiss();
                                         display();

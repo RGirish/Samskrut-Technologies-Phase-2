@@ -1,4 +1,4 @@
-package com.iclub.samskrut.unrealestate;
+package com.samskrut.unrealestate;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         getSupportActionBar().setTitle(Html.fromHtml("<font color=\"#ffffff\">unrealEstate</font>"));
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
-        Parse.initialize(this, "MLappAru24RvnrYhZ92oUCHYKz1UlEJT35ovBNaL", "NZJXdP2Zq315OM9YRHOEQ0KG2UJoM2qFUlngOO7I");
+        Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
 
         db = openOrCreateDatabase("unrealestate.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
         createTables();
@@ -86,15 +86,15 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         download();
     }
 
-    public void checkForDownload(){
+    public void checkForDownload() {
         Cursor cursor = db.rawQuery("SELECT COUNT(name) FROM projects;", null);
         cursor.moveToFirst();
         int count = cursor.getInt(0);
-        if(count == 0){
-            if(checkConnection()){
+        if (count == 0) {
+            if (checkConnection()) {
                 download();
-            }else{
-                Toast.makeText(this,"Please check your Internet Connection!",Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "Please check your Internet Connection!", Toast.LENGTH_LONG).show();
             }
         }
         cursor.close();
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     public void download(){
         dialog1 = ProgressDialog.show(this, null, "Downloading Data...");
         db.execSQL("DELETE FROM projects;");
-        final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
+        final ParseQuery<ParseObject> query = ParseQuery.getQuery("unrealEstate");
         query.orderByAscending("pos");
         query.selectKeys( Arrays.asList("pos", "name", "description" , "url"));
         query.findInBackground(new FindCallback<ParseObject>() {
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         dialog1.setMessage("Downloading Image 1/"+notAvailableList.size());
         CURR_COUNT=0;
         for (final int k : notAvailableList) {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
+            ParseQuery<ParseObject> query = ParseQuery.getQuery("unrealEstate");
             query.whereEqualTo("pos", k);
             query.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {

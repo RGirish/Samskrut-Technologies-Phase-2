@@ -15,7 +15,7 @@
         android:layout_marginTop="-40dp"
         android:layout_gravity="bottom|center_horizontal"
         android:id="@+id/finishButton"
-        android:textColor="#fff"
+        android:textColor="#ff8597"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_width="wrap_content"
