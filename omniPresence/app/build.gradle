@@ -20,7 +20,7 @@ android {
     buildToolsVersion "22.0.1"
 
     defaultConfig {
-        applicationId "com.iclub.samskrut.omnipresence"
+        applicationId "com.samskrut.omnipresence"
         minSdkVersion 16
         targetSdkVersion 22
         versionCode 1

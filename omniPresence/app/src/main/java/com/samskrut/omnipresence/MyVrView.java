@@ -1,5 +1,5 @@
 
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.content.Context;
 import android.content.Intent;

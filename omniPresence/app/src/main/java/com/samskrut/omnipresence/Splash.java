@@ -1,4 +1,4 @@
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.app.ProgressDialog;
 import android.content.Context;

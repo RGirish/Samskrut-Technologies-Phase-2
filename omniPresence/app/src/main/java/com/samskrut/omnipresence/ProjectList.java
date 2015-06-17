@@ -1,5 +1,5 @@
 
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.animation.ValueAnimator;
 import android.app.ProgressDialog;

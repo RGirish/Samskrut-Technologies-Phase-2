@@ -1,4 +1,4 @@
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.content.Intent;
 import android.os.CountDownTimer;
@@ -21,11 +21,11 @@ public class Countdown extends AppCompatActivity {
 
         setFullscreen(true);
 
-        /*Intent intent = new Intent(Countdown.this,ProjectList.class);
+        Intent intent = new Intent(Countdown.this,ProjectList.class);
         startActivity(intent);
-        finish();*/
+        finish();
 
-        new CountDownTimer(11000, 1000) {
+        /*new CountDownTimer(11000, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 ((TextView)findViewById(R.id.count)).setText(String.valueOf(millisUntilFinished/1000));
@@ -35,7 +35,7 @@ public class Countdown extends AppCompatActivity {
                 startActivity(intent);
                 finish();
             }
-        }.start();
+        }.start();*/
     }
 
     private void setFullscreen(boolean fullscreen) {

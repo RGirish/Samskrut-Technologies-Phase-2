@@ -1,4 +1,4 @@
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.content.Intent;
 import android.database.Cursor;

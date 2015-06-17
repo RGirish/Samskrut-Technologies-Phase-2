@@ -1,10 +1,10 @@
-
-package com.iclub.samskrut.omnipresence;
+package com.samskrut.omnipresence;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -23,6 +23,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Toast;
+
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
@@ -40,28 +42,28 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class YoutubeStreamActivity extends CardboardActivity implements PFAssetObserver, OnSeekBarChangeListener, PFHotspotClickListener, SensorEventListener, CardboardView.StereoRenderer {
+public class MyVrVideoView extends CardboardActivity implements PFAssetObserver, OnSeekBarChangeListener, PFHotspotClickListener, SensorEventListener, CardboardView.StereoRenderer {
 
-    PFView _pfview;
-    PFAsset _pfasset;
+	PFView _pfview;
+	PFAsset _pfasset;
     PFNavigationMode _currentNavigationMode = PFNavigationMode.MOTION;
-    boolean _updateThumb = true;;
+	boolean _updateThumb = true;
     Timer _scrubberMonitorTimer;
     ViewGroup _frameContainer;
-    Button _stopButton;
-    Button _playButton;
-    Button _touchButton;
-    SeekBar _scrubber;
+	Button _stopButton;
+	Button _playButton;
+	Button _touchButton;
+	SeekBar _scrubber;
     float X,Y,Z;
     int _projectPos=0,_pos=0;
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
 
-    public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {        
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(R.layout.activity_youtube);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);                
+        setContentView(R.layout.vr_video);
 
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -73,18 +75,20 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
 
         _frameContainer = (ViewGroup) findViewById(R.id.framecontainer);
         _frameContainer.setBackgroundColor(0xFF000000);
+        
+		_playButton = (Button)findViewById(R.id.playbutton);     
+		_stopButton = (Button)findViewById(R.id.stopbutton);      
+		_touchButton = (Button)findViewById(R.id.touchbutton);        
+		_scrubber = (SeekBar)findViewById(R.id.scrubber); 
+		
+		_playButton.setOnClickListener(playListener);               
+		_stopButton.setOnClickListener(stopListener);        		
+		_touchButton.setOnClickListener(touchListener);         
+		_scrubber.setOnSeekBarChangeListener(this);
+		
+		_scrubber.setEnabled(false);
 
-        _playButton = (Button)findViewById(R.id.playbutton);
-        _stopButton = (Button)findViewById(R.id.stopbutton);
-        _touchButton = (Button)findViewById(R.id.touchbutton);
-        _scrubber = (SeekBar)findViewById(R.id.scrubber);
-
-        _playButton.setOnClickListener(playListener);
-        _stopButton.setOnClickListener(stopListener);
-        _touchButton.setOnClickListener(touchListener);
-        _scrubber.setOnSeekBarChangeListener(this);
-
-        _scrubber.setEnabled(false);
+		showControls(true);
 
         //Text To Speech
         ProjectList.tts.stop();
@@ -103,7 +107,7 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         //Start Playing Video
 
         if (_pfasset == null)
-            loadVideo("https://www.youtube.com/watch?v=TA8JprZlDYA");
+            loadVideo(getFilesDir().getAbsolutePath()+"/"+Login.USERNAME+"_"+_projectPos+"_"+_pos+".mp4");
 
         if (_pfasset.getStatus() == PFAssetStatus.PLAYING) {
             _pfasset.pause();
@@ -113,162 +117,184 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
             }
             _pfasset.play();
         }
-        showControls(false);
-
     }
 
-    public void onClick(PFHotspot hotspot) {
-        hotspot.animate();
-        //hotspot.setEnabled(false);
-        Log.d("SimplePlayer", "Hotspot clicked: "+hotspot.getTag());
-    }
 
-    public void showControls(boolean bShow)
-    {
-        int visibility = View.GONE;
+	public void onConfigurationChanged(Configuration newConfig) {
+	    super.onConfigurationChanged(newConfig);
+	    if (_pfview != null)
+	    	_pfview.handleOrientationChange();
+	}
 
-        if (bShow)
-            visibility = View.VISIBLE;
-
-        _playButton.setVisibility(visibility);
-        _stopButton.setVisibility(visibility);
-        _touchButton.setVisibility(visibility);
-        _scrubber.setVisibility(visibility);
-
-        if (_pfview != null)
-        {
-            if (!_pfview.supportsNavigationMode(PFNavigationMode.MOTION))
-                _touchButton.setVisibility(View.GONE);
-        }
+    public void showControls(boolean bShow){
+    	int visibility = View.GONE;
+    	
+    	if (bShow)
+    		visibility = View.VISIBLE;
+    		
+		_playButton.setVisibility(visibility);
+		_stopButton.setVisibility(visibility);
+		_touchButton.setVisibility(visibility);		
+		_scrubber.setVisibility(visibility);		
+		
+		if (_pfview != null)
+		{
+			if (!_pfview.supportsNavigationMode(PFNavigationMode.MOTION))
+				_touchButton.setVisibility(View.GONE);
+		}		
     }
 
     public void loadVideo(String filename)
     {
-
         _pfview = PFObjectFactory.view(this);
         _pfasset = PFObjectFactory.assetFromUri(this, Uri.parse(filename), this);
-
         _pfview.displayAsset(_pfasset);
         _pfview.setNavigationMode(_currentNavigationMode);
         _pfview.setMode(2,0);
-
         _frameContainer.addView(_pfview.getView(), 0);
 
+        PFHotspot hp1 = _pfview.createHotspot(BitmapFactory.decodeResource(getResources(), R.raw.hotspot));
+        hp1.setTag(10);
+        hp1.setCoordinates(60, 40, 0);
+        hp1.setClickListener(this);
+
+        PFHotspot hp2 = _pfview.createHotspot(BitmapFactory.decodeResource(getResources(), R.raw.hotspot));
+        hp2.setTag(20);
+        hp2.setCoordinates(0, 40, 0);
+        hp2.setClickListener(this);
+
+        showControls(false);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
-    public void onStatusMessage(final PFAsset asset, PFAssetStatus status) {
-        switch (status)
-        {
-            case LOADED:
-                Log.d("SimplePlayer", "Loaded");
-                break;
-            case DOWNLOADING:
-                Log.d("SimplePlayer", "Downloading 360¡ movie: "+_pfasset.getDownloadProgress()+" percent complete");
-                break;
-            case DOWNLOADED:
-                Log.d("SimplePlayer", "Downloaded to "+asset.getUrl());
-                break;
-            case DOWNLOADCANCELLED:
-                Log.d("SimplePlayer", "Download cancelled");
-                break;
-            case PLAYING:
-                Log.d("SimplePlayer", "Playing");
-                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                _scrubber.setEnabled(true);
-                _playButton.setText("pause");
-                _scrubberMonitorTimer = new Timer();
-                final TimerTask task = new TimerTask() {
-                    public void run() {
-                        if (_updateThumb)
-                        {
-                            _scrubber.setMax((int) asset.getDuration());
-                            _scrubber.setProgress((int) asset.getPlaybackTime());
-                        }
-                    }
-                };
-                _scrubberMonitorTimer.schedule(task, 0, 33);
-                break;
-            case PAUSED:
-                Log.d("SimplePlayer", "Paused");
-                _playButton.setText("play");
-                break;
-            case STOPPED:
-                Log.d("SimplePlayer", "Stopped");
-                _playButton.setText("play");
-                _scrubberMonitorTimer.cancel();
-                _scrubberMonitorTimer = null;
-                _scrubber.setProgress(0);
-                _scrubber.setEnabled(false);
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                break;
-            case COMPLETE:
-                Log.d("SimplePlayer", "Complete");
-                _playButton.setText("play");
-                _scrubberMonitorTimer.cancel();
-                _scrubberMonitorTimer = null;
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                break;
-            case ERROR:
-                Log.d("SimplePlayer", "Error");
-                break;
-        }
-    }
+	public void onStatusMessage(final PFAsset asset, PFAssetStatus status) {
+		switch (status)
+		{
+			case LOADED:
+				Log.d("SimplePlayer", "Loaded");
+				break;
+			case DOWNLOADING:
+				Log.d("SimplePlayer", "Downloading 360� movie: "+_pfasset.getDownloadProgress()+" percent complete");
+				break;
+			case DOWNLOADED:
+				Log.d("SimplePlayer", "Downloaded to "+asset.getUrl());
+				break;
+			case DOWNLOADCANCELLED:
+				Log.d("SimplePlayer", "Download cancelled");
+				break;
+			case PLAYING:
+				Log.d("SimplePlayer", "Playing");
+		        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+				_scrubber.setEnabled(true);
+				_scrubber.setMax((int) asset.getDuration());
+				_playButton.setText("pause");
+				if (_scrubberMonitorTimer == null)
+				{
+					_scrubberMonitorTimer = new Timer();				
+					final TimerTask task = new TimerTask() {
+						public void run() {
+							if (_updateThumb)
+								_scrubber.setProgress((int) asset.getPlaybackTime());						
+						}
+					};
+					_scrubberMonitorTimer.schedule(task, 0, 33);
+				}
+				break;
+			case PAUSED:
+				Log.d("SimplePlayer", "Paused");
+				_playButton.setText("play");
+		        _pfview.injectImageFromResource(R.raw.pausescreen);
+				break;
+			case STOPPED:
+				Log.d("SimplePlayer", "Stopped");
+				_playButton.setText("play");
+				_scrubberMonitorTimer.cancel();
+				_scrubberMonitorTimer.purge();
+				_scrubberMonitorTimer = null;
+				_scrubber.setProgress(0);
+				_scrubber.setEnabled(false);
+		        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+				break;
+			case COMPLETE:
+				Log.d("SimplePlayer", "Complete");
+				_playButton.setText("play");
+				_scrubberMonitorTimer.cancel();
+				_scrubberMonitorTimer.purge();
+				_scrubberMonitorTimer = null;
+		        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+				break;
+			case ERROR:
+				Log.d("SimplePlayer", "Error");
+				break;
+		}
+	}
 
-    private OnClickListener playListener = new OnClickListener() {
-        public void onClick(View v) {
-            if (_pfasset.getStatus() == PFAssetStatus.PLAYING)
-            {
-                _pfasset.pause();
-            }
-            else
+	private OnClickListener playListener = new OnClickListener() {
+		public void onClick(View v) {
+
+			if (_pfasset == null)
+				loadVideo(getFilesDir().getAbsolutePath()+"/"+Login.USERNAME+"_"+_projectPos+"_"+_pos+".mp4");
+
+			if (_pfasset.getStatus() == PFAssetStatus.PLAYING)
+			{
+				_pfasset.pause();
+			}
+			else
+			{
+				if (_pfview != null)
+				{
+					_pfview.injectImage(null);
+				}
                 _pfasset.play();
-        }
-    };
+			}
+		}
+	};
 
-    private OnClickListener stopListener = new OnClickListener() {
-        public void onClick(View v) {
-            _pfasset.stop();
-        }
-    };
+	private OnClickListener stopListener = new OnClickListener() {
+		public void onClick(View v) {
+			if (_pfasset == null)
+				return;
+			
+			_pfasset.stop();
+			
+			// cleanup
+	        _pfview.release();
+	        _pfasset.release();	        
+	        
+	        _pfasset = null;
+	        
+	        _frameContainer.removeView(_pfview.getView());     
+	        _pfview = null;
+	        
+		}
+	};
 
-    private OnClickListener touchListener = new OnClickListener() {
-        public void onClick(View v) {
-            if (_pfview != null)
-            {
-                Button touchButton = (Button)findViewById(R.id.touchbutton);
-                if (_currentNavigationMode == PFNavigationMode.TOUCH)
-                {
-                    _currentNavigationMode = PFNavigationMode.MOTION;
-                    touchButton.setText("motion");
-                }
-                else
-                {
-                    _currentNavigationMode = PFNavigationMode.TOUCH;
-                    touchButton.setText("touch");
-                }
-                _pfview.setNavigationMode(_currentNavigationMode);
-            }
-        }
-    };
-
-    public void onProgressChanged (SeekBar seekbar, int progress, boolean fromUser) {
-    }
-
-    public void onStartTrackingTouch(SeekBar seekbar) {
-        _updateThumb = false;
-    }
-
-    public void onStopTrackingTouch(SeekBar seekbar) {
-        _updateThumb = true;
-    }
-
+	private OnClickListener touchListener = new OnClickListener() {
+		public void onClick(View v) {
+			if (_pfview != null)
+			{
+				Button touchButton = (Button)findViewById(R.id.touchbutton);    
+				if (_currentNavigationMode == PFNavigationMode.TOUCH)
+				{
+					_currentNavigationMode = PFNavigationMode.MOTION;
+					touchButton.setText("motion");
+				}
+				else
+				{
+					_currentNavigationMode = PFNavigationMode.TOUCH;
+					touchButton.setText("touch");
+				}
+				_pfview.setNavigationMode(_currentNavigationMode);
+			}
+		}
+	};
 
     public void onPause() {
-        super.onPause();
+        super.onPause(); 
         if (_pfasset != null)
         {
-            if (_pfasset.getStatus() == PFAssetStatus.PLAYING)
-                _pfasset.pause();
+	        if (_pfasset.getStatus() == PFAssetStatus.PLAYING)
+	        	_pfasset.pause();
         }
         senSensorManager.unregisterListener(this);
     }
@@ -278,7 +304,25 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
-    @Override
+	public void onProgressChanged (SeekBar seekbar, int progress, boolean fromUser) {}
+
+	public void onStartTrackingTouch(SeekBar seekbar) {
+		_updateThumb = false;
+	}
+
+	public void onStopTrackingTouch(SeekBar seekbar) {
+		_pfasset.setPLaybackTime(seekbar.getProgress());
+		_updateThumb = true;
+	}
+
+    public void onClick(PFHotspot hotspot) {
+		hotspot.animate();
+        //hotspot.setEnabled(false);
+        Toast.makeText(MyVrVideoView.this, hotspot.getTag(), Toast.LENGTH_SHORT).show();
+        Log.d("SimplePlayer", "Hotspot clicked: "+hotspot.getTag());
+	}
+
+	@Override
     public void onCardboardTrigger(){
         Log.e("onCardboardTrigger", "onCardboardTrigger");
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -290,7 +334,7 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         Log.e("VALUES", (Xint) + " " + (Yint) + " " + (Zint));
 
         if((Xint==0 || Xint==1 || Xint==2) && (Yint==0 || Yint==1 || Yint==2) && (Zint==10 || Zint==9 || Zint==8)){
-            YoutubeStreamActivity.super.onBackPressed();
+            MyVrVideoView.super.onBackPressed();
             return;
         }
 
@@ -300,18 +344,18 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         int COUNT_2 = cursor2.getInt(0);
         cursor2.close();
         if (_pos + 1 < COUNT_2) {
-            Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=" + _projectPos + " AND pos=" + (_pos + 1)+";",null);
+            Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos="+_projectPos+" AND pos="+(_pos+1)+";",null);
             c.moveToFirst();
             String type = c.getString(0);
             c.close();
             if(type.equals("image")){
-                Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                 intent.putExtra("projectPos",_projectPos);
-                intent.putExtra("pos", _pos+1);
+                intent.putExtra("pos",_pos+1);
                 startActivity(intent);
                 finish();
-            } else if (type.equals("video")){
-                Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+            }else if(type.equals("video")){
+                Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                 intent.putExtra("projectPos",_projectPos);
                 intent.putExtra("pos",_pos+1);
                 startActivity(intent);
@@ -327,13 +371,13 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                 c.moveToFirst();
                 String type = c.getString(0);
                 if(type.equals("image")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                     intent.putExtra("projectPos",_projectPos+1);
                     intent.putExtra("pos",0);
                     startActivity(intent);
                     finish();
                 }else if(type.equals("video")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                     intent.putExtra("projectPos",_projectPos+1);
                     intent.putExtra("pos",0);
                     startActivity(intent);
@@ -345,13 +389,13 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                 String type = c.getString(0);
                 c.close();
                 if(type.equals("image")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                     intent.putExtra("projectPos",0);
                     intent.putExtra("pos",0);
                     startActivity(intent);
                     finish();
                 }else if(type.equals("video")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                     intent.putExtra("projectPos",0);
                     intent.putExtra("pos",0);
                     startActivity(intent);
@@ -361,8 +405,8 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
         }
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
+	@Override
+	public void onSensorChanged(SensorEvent sensorEvent) {
         Sensor mySensor = sensorEvent.sensor;
         if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             X = sensorEvent.values[0];
@@ -386,13 +430,13 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                 c.moveToFirst();
                 String type = c.getString(0);
                 if(type.equals("image")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                     intent.putExtra("projectPos",_projectPos);
                     intent.putExtra("pos",_pos+1);
                     startActivity(intent);
                     finish();
                 }else if(type.equals("video")){
-                    Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+                    Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                     intent.putExtra("projectPos",_projectPos);
                     intent.putExtra("pos",_pos+1);
                     startActivity(intent);
@@ -408,13 +452,13 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                     c.moveToFirst();
                     String type = c.getString(0);
                     if(type.equals("image")){
-                        Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                        Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                         intent.putExtra("projectPos",_projectPos+1);
                         intent.putExtra("pos",0);
                         startActivity(intent);
                         finish();
                     }else if(type.equals("video")){
-                        Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+                        Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                         intent.putExtra("projectPos",_projectPos+1);
                         intent.putExtra("pos",0);
                         startActivity(intent);
@@ -425,13 +469,13 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
                     c.moveToFirst();
                     String type = c.getString(0);
                     if(type.equals("image")){
-                        Intent intent = new Intent(YoutubeStreamActivity.this, MyVrView.class);
+                        Intent intent = new Intent(MyVrVideoView.this, MyVrView.class);
                         intent.putExtra("projectPos",0);
                         intent.putExtra("pos",0);
                         startActivity(intent);
                         finish();
                     }else if(type.equals("video")){
-                        Intent intent = new Intent(YoutubeStreamActivity.this, MyVrVideoView.class);
+                        Intent intent = new Intent(MyVrVideoView.this, MyVrVideoView.class);
                         intent.putExtra("projectPos",0);
                         intent.putExtra("pos",0);
                         startActivity(intent);
@@ -447,25 +491,25 @@ public class YoutubeStreamActivity extends CardboardActivity implements PFAssetO
     }
 
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
-    @Override
-    public void onNewFrame(HeadTransform headTransform) {}
+	@Override
+	public void onNewFrame(HeadTransform headTransform) {}
 
-    @Override
-    public void onDrawEye(Eye eye) {}
+	@Override
+	public void onDrawEye(Eye eye) {}
 
-    @Override
-    public void onFinishFrame(Viewport viewport) {}
+	@Override
+	public void onFinishFrame(Viewport viewport) {}
 
-    @Override
-    public void onSurfaceChanged(int i, int i1) {}
+	@Override
+	public void onSurfaceChanged(int i, int i1) {}
 
-    @Override
-    public void onSurfaceCreated(EGLConfig eglConfig) {}
+	@Override
+	public void onSurfaceCreated(EGLConfig eglConfig) {}
 
-    @Override
-    public void onRendererShutdown() {}
+	@Override
+	public void onRendererShutdown() {}
 
 }
