@@ -84,6 +84,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                         intent.putExtra("pos",pos+1);
                         startActivity(intent);
                         finish();
+                    }else if(type.startsWith("youtube")){
+                        Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
                     }
                 } else {
                     Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
@@ -106,6 +112,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                             intent.putExtra("pos", 0);
                             startActivity(intent);
                             finish();
+                        } else if (type.startsWith("youtube")) {
+                            Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                            intent.putExtra("projectPos", projectPos + 1);
+                            intent.putExtra("pos", 0);
+                            startActivity(intent);
+                            finish();
                         }
                     } else {
                         Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;", null);
@@ -119,6 +131,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                             finish();
                         } else if (type.equals("video")) {
                             Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos", 0);
+                            intent.putExtra("pos", 0);
+                            startActivity(intent);
+                            finish();
+                        } else if (type.startsWith("youtube")) {
+                            Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
                             intent.putExtra("projectPos", 0);
                             intent.putExtra("pos", 0);
                             startActivity(intent);
@@ -172,6 +190,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                         intent.putExtra("pos",pos+1);
                         startActivity(intent);
                         finish();
+                    }else if(type.startsWith("youtube")){
+                        Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                        intent.putExtra("projectPos",projectPos);
+                        intent.putExtra("pos",pos+1);
+                        startActivity(intent);
+                        finish();
                     }
                 } else {
                     Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
@@ -194,6 +218,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                             intent.putExtra("pos",0);
                             startActivity(intent);
                             finish();
+                        }else if(type.startsWith("youtube")){
+                            Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                            intent.putExtra("projectPos",projectPos+1);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
                         }
                     } else {
                         Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
@@ -207,6 +237,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                             finish();
                         }else if(type.equals("video")){
                             Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                            intent.putExtra("projectPos",0);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
+                            finish();
+                        }else if(type.startsWith("youtube")){
+                            Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
                             intent.putExtra("projectPos",0);
                             intent.putExtra("pos",0);
                             startActivity(intent);
@@ -258,6 +294,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                 intent.putExtra("pos",pos+1);
                 startActivity(intent);
                 finish();
+            }else if(type.startsWith("youtube")){
+                Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                intent.putExtra("projectPos",projectPos);
+                intent.putExtra("pos",pos+1);
+                startActivity(intent);
+                finish();
             }
         } else {
             Cursor cursor1 = ProjectList.db.rawQuery("SELECT COUNT(pos) FROM projects;", null);
@@ -280,6 +322,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                     intent.putExtra("pos",0);
                     startActivity(intent);
                     finish();
+                }else if(type.startsWith("youtube")){
+                    Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
+                    intent.putExtra("projectPos",projectPos+1);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
                 }
             } else {
                 Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE projectPos=0 AND pos=0;",null);
@@ -293,6 +341,12 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                     finish();
                 }else if(type.equals("video")){
                     Intent intent = new Intent(MyVrView.this, MyVrVideoView.class);
+                    intent.putExtra("projectPos",0);
+                    intent.putExtra("pos",0);
+                    startActivity(intent);
+                    finish();
+                }else if(type.startsWith("youtube")){
+                    Intent intent = new Intent(MyVrView.this, YoutubeStreamActivity.class);
                     intent.putExtra("projectPos",0);
                     intent.putExtra("pos",0);
                     startActivity(intent);

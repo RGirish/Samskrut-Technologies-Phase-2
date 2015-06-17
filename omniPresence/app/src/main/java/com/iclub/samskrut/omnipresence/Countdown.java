@@ -5,13 +5,14 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
 import android.widget.TextView;
 
 
-public class Countdown extends ActionBarActivity {
+public class Countdown extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,6 +20,10 @@ public class Countdown extends ActionBarActivity {
         setContentView(R.layout.activity_countdown);
 
         setFullscreen(true);
+
+        /*Intent intent = new Intent(Countdown.this,ProjectList.class);
+        startActivity(intent);
+        finish();*/
 
         new CountDownTimer(11000, 1000) {
 

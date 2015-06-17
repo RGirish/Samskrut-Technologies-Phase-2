@@ -104,7 +104,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         //Start Playing Video
 
         if (_pfasset == null)
-            loadVideo(getFilesDir().getAbsolutePath()+"/"+_projectPos+"_"+_pos+".mp4");
+            loadVideo(getFilesDir().getAbsolutePath()+"/"+Login.USERNAME+"_"+_projectPos+"_"+_pos+".mp4");
 
         if (_pfasset.getStatus() == PFAssetStatus.PLAYING) {
             _pfasset.pause();
@@ -219,7 +219,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 		public void onClick(View v) {
 
 			if (_pfasset == null)
-				loadVideo(getFilesDir().getAbsolutePath()+"/"+_projectPos+"_"+_pos+".mp4");
+				loadVideo(getFilesDir().getAbsolutePath()+"/"+Login.USERNAME+"_"+_projectPos+"_"+_pos+".mp4");
 
 			if (_pfasset.getStatus() == PFAssetStatus.PLAYING)
 			{

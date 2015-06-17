@@ -35,9 +35,9 @@ public class MyRenderer extends RajawaliCardboardRenderer {
 
         InputStream is = null;
         try{
-            is = contextWrapper.openFileInput(projectPos + "_" + pos + ".jpg");
+            is = contextWrapper.openFileInput(Login.USERNAME+"_"+projectPos + "_" + pos + ".jpg");
         }catch (FileNotFoundException e){
-            Log.e("MyRenderer filenotfound",projectPos + "_" + pos + ".jpg");
+            Log.e("MyRenderer filenotfound",Login.USERNAME+"_"+projectPos + "_" + pos + ".jpg");
         }
         Bitmap bitmap = BitmapFactory.decodeStream(is);
         //Bitmap bitmap = decodeFile(is);

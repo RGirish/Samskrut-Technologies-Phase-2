@@ -43,4 +43,5 @@ dependencies {
     compile files('libs/panframe-1.9.jar')
     compile files('libs/YouTubeAndroidPlayerApi.jar')
     compile 'com.crashlytics.android:crashlytics:1.+'
+    compile 'com.xgc1986.android:parallaxpagertransformer:1.0.3'
 }

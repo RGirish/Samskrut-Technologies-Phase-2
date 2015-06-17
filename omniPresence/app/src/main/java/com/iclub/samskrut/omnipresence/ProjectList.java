@@ -41,8 +41,6 @@ import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
-import com.parse.Parse;
-import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
@@ -108,11 +106,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             }
         });
 
-        try{ParseCrashReporting.enable(this);}catch (Exception e){}
-        Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
-
         db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
-        createTables();
 
         checkForDownload();
 
@@ -289,9 +283,8 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         dialog1 = ProgressDialog.show(this,null,"Downloading data...");
         Log.e("download", "download");
 
-        final ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
+        final ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.PROJECTS_TABLE_NAME);
         query.orderByAscending("pos");
-        query.selectKeys( Arrays.asList("pos","updatedAt"));
         query.findInBackground(new FindCallback<ParseObject>() {
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
@@ -300,7 +293,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                         Log.e("QUERY","INSERT INTO projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
                     }
 
-                    final ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
+                    final ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.SUBPROJECTS_TABLE_NAME);
                     query.orderByAscending("projectPos");
                     query.addAscendingOrder("pos");
                     query.selectKeys(Arrays.asList("projectPos", "pos", "tts", "mediaType"));
@@ -342,7 +335,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                if (!exists(pos + "_th.jpg")) {
+                if (!exists(Login.USERNAME+"_" + pos + "_th.jpg")) {
                     //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
                     notAvailableList_th.add(pos);
                 }
@@ -416,26 +409,31 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         toBeDeletedList = new ArrayList<>(COUNT);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects_temp ORDER BY projectPos,pos;", null);
+        cursor = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM subProjects_temp ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                if (!exists(projectPos + "_" + pos + ".jpg") && !exists(projectPos + "_" + pos + ".mp4")) {
-                    //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
-                    notAvailableList.add(projectPos + "_" + pos);
+                String mediaType = cursor.getString(3);
+                if(!mediaType.startsWith("youtube")) {
+                    if (!exists(Login.USERNAME + "_" + projectPos + "_" + pos + ".jpg") && !exists(Login.USERNAME + "_" + projectPos + "_" + pos + ".mp4")) {
+                        //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
+                        notAvailableList.add(projectPos + "_" + pos);
+                    }
                 }
-
-                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp FROM subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
+                    String mt = c.getString(3);
                     String currentTime = c.getString(2);
                     String updatedTime = cursor.getString(2);
                     if(!currentTime.equals(updatedTime)){
                         //the item has been modified
-                        if(!notAvailableList.contains(projectPos + "_" + pos)) notAvailableList.add(projectPos + "_" + pos);
+                        if(!mt.startsWith("youtube")) {
+                            if(!notAvailableList.contains(projectPos + "_" + pos)) notAvailableList.add(projectPos + "_" + pos);
+                        }
                     }
                 }catch (Exception e){
                     //it's a new item and it has already been added to the list
@@ -472,7 +470,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             }
         }catch (Exception e){}
         cursor.close();
-
 
         s="";
         for(String i: notAvailableList){
@@ -531,14 +528,14 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         //DELETE FILES IF ANY
         File dir = getFilesDir();
         for(int i : toBeDeletedList_th){
-            File file = new File(dir, i+"_th.jpg");
+            File file = new File(dir, Login.USERNAME+"_" + i + "_th.jpg");
             file.delete();
         }
         for(String i : toBeDeletedList){
             try {
-                File file = new File(dir, i + ".jpg");
+                File file = new File(dir, Login.USERNAME+"_" + i + ".jpg");
                 file.delete();
-                file = new File(dir, i + ".mp4");
+                file = new File(dir, Login.USERNAME+"_" + i + ".mp4");
                 file.delete();
             }catch (Exception e){}
         }
@@ -561,7 +558,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         }
         CURR_COUNT_th=0;
         for (final int k : notAvailableList_th) {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery("Projects");
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.PROJECTS_TABLE_NAME);
             query.whereEqualTo("pos", k);
             query.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
@@ -570,7 +567,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                         myFile.getDataInBackground(new GetDataCallback() {
                             public void done(byte[] data, ParseException e) {
                                 if (e == null) {
-                                    writeFile(data, k + "_th.jpg");
+                                    writeFile(data, Login.USERNAME+"_" + k + "_th.jpg");
                                     CURR_COUNT_th++;
                                     dialog1.setMessage("Downloading Thumbnail "+(CURR_COUNT_th+1)+"/"+notAvailableList_th.size());
                                     if (CURR_COUNT_th == notAvailableList_th.size()) {
@@ -607,7 +604,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         }
         CURR_COUNT=0;
         for (final String s : notAvailableList) {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery("subProjects");
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.SUBPROJECTS_TABLE_NAME);
             String[] parts = s.split("_");
             final int projectPos = Integer.parseInt(parts[0]);
             final int pos = Integer.parseInt(parts[1]);
@@ -622,10 +619,10 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                                 if (e == null) {
                                     if(myFile.getName().endsWith("jpg")){
                                         Log.e("FILENAME", "jpg");
-                                        writeFile(data, projectPos + "_" + pos + ".jpg");
+                                        writeFile(data, Login.USERNAME+"_" + projectPos + "_" + pos + ".jpg");
                                     }else if(myFile.getName().endsWith("mp4")){
                                         Log.e("FILENAME", "mp4");
-                                        writeFile(data, projectPos + "_" + pos + ".mp4");
+                                        writeFile(data, Login.USERNAME+"_" + projectPos + "_" + pos + ".mp4");
                                     }
                                     CURR_COUNT++;
                                     dialog1.setMessage("Downloading Panorama "+(CURR_COUNT+1)+"/"+notAvailableList.size());
@@ -651,7 +648,6 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
         mainll.removeAllViews();
 
-
         Cursor cursor = db.rawQuery("SELECT pos FROM projects ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
@@ -669,7 +665,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
 
                 ImageView imageButton = new ImageView(this);
                 imageButton.setTag("project" + projectPos);
-                InputStream is = openFileInput(projectPos + "_th.jpg");
+                InputStream is = openFileInput(Login.USERNAME+"_" + projectPos + "_th.jpg");
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
                 imageButton.setImageBitmap(bitmap);
                 params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)getResources().getDimension(R.dimen.dp330));
@@ -691,6 +687,11 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                             intent.putExtra("projectPos",projectPos);
                             intent.putExtra("pos",0);
                             startActivity(intent);
+                        }else if(type.equals("youtube")){
+                            Intent intent = new Intent(ProjectList.this, YoutubeStreamActivity.class);
+                            intent.putExtra("projectPos",projectPos);
+                            intent.putExtra("pos",0);
+                            startActivity(intent);
                         }
 
                     }
@@ -704,32 +705,14 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
                     break;
                 }
             }
-        }catch (Exception e){}
+        }catch (Exception e){
+            Log.e("JONNNNNNN","SSNOOOWWWWWWWWWWWWWWWW");
+            Log.e(e.toString(),e.getMessage());
+        }
 
         cursor.close();
 
 
-    }
-
-    public void createTables() {
-
-        /*db.execSQL("DROP TABLE projects;");
-        db.execSQL("DROP TABLE projects_temp;");
-        db.execSQL("DROP TABLE subProjects;");
-        db.execSQL("DROP TABLE subProjects_temp;");*/
-
-        try{
-            db.execSQL("CREATE TABLE projects(pos NUMBER,timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE subProjects(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE projects_temp(pos NUMBER,timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE subProjects_temp(projectPos NUMBER, pos NUMBER, tts TEXT, mediatype TEXT, timestamp TEXT);");
-        }catch(Exception e){}
     }
 
     public boolean checkConnection(){
@@ -748,6 +731,7 @@ public class ProjectList extends CardboardActivity implements SwipeRefreshLayout
             Log.e("WriteFile",e.getMessage());
         }
     }
+
 
     private void setFullscreen(boolean fullscreen) {
         WindowManager.LayoutParams attrs = getWindow().getAttributes();
