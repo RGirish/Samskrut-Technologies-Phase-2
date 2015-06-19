@@ -4,6 +4,7 @@ package com.samskrut.omnipresence;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -14,11 +15,17 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.Toast;
+
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
 import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
+import com.panframe.android.lib.PFHotspot;
+import com.panframe.android.lib.PFHotspotClickListener;
+import com.panframe.android.lib.PFObjectFactory;
+
 import org.rajawali3d.cardboard.RajawaliCardboardRenderer;
 import org.rajawali3d.cardboard.RajawaliCardboardView;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -97,7 +104,7 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
                     int COUNT_1 = cursor1.getInt(0);
                     cursor1.close();
                     if (projectPos + 1 < COUNT_1) {
-                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE "+Login.USERNAME+"_projectPos=" + (projectPos + 1) + " AND pos=0;", null);
+                        Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + (projectPos + 1) + " AND pos=0;", null);
                         c.moveToFirst();
                         String type = c.getString(0);
                         if (type.equals("image")) {
@@ -162,6 +169,7 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
             ProjectList.tts.speak(cursor.getString(0), TextToSpeech.QUEUE_FLUSH, null);
         }
         cursor.close();
+
     }
 
 
@@ -401,4 +409,5 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
         super.onResume();
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
+
 }

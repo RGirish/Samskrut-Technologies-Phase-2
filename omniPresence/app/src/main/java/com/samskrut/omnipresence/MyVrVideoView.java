@@ -149,8 +149,10 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         _pfasset = PFObjectFactory.assetFromUri(this, Uri.parse(filename), this);
         _pfview.displayAsset(_pfasset);
         _pfview.setNavigationMode(_currentNavigationMode);
+        _pfview.setBlindSpotImage(BitmapFactory.decodeResource(getResources(), R.raw.blackspot));
+        _pfview.setBlindSpotPosition(1);
+        _pfview.setBlindSpotScale(1.5f);
         _pfview.setMode(2,0);
-        _frameContainer.addView(_pfview.getView(), 0);
 
         PFHotspot hp1 = _pfview.createHotspot(BitmapFactory.decodeResource(getResources(), R.raw.hotspot));
         hp1.setTag(10);
@@ -161,6 +163,10 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         hp2.setTag(20);
         hp2.setCoordinates(0, 40, 0);
         hp2.setClickListener(this);
+
+
+        _frameContainer.addView(_pfview.getView(), 0);
+
 
         showControls(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -315,7 +321,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 	}
 
     public void onClick(PFHotspot hotspot) {
-		hotspot.animate();
+        hotspot.animate();
         //hotspot.setEnabled(false);
         Toast.makeText(MyVrVideoView.this, hotspot.getTag(), Toast.LENGTH_SHORT).show();
         Log.d("SimplePlayer", "Hotspot clicked: "+hotspot.getTag());
