@@ -8,12 +8,16 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +46,7 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Crashlytics.start(this);
         setContentView(R.layout.activity_login);
+        setFullScreen(true);
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
         db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
@@ -71,6 +76,25 @@ public class Login extends AppCompatActivity {
                 finish();
             }
         }catch(Exception e){}
+
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            final Button loginButton = (Button) findViewById(R.id.loginButton);
+            loginButton.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button_dark));
+                    } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button));
+                        hideKeyboard();
+                        onClickLogin(null);
+                    } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button));
+                    }
+                    return true;
+                }
+            });
+        }
 
         EditText editText = (EditText)findViewById(R.id.password);
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -218,6 +242,17 @@ public class Login extends AppCompatActivity {
             InputMethodManager inputManager = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
+    }
+
+    void setFullScreen(boolean fullscreen) {
+        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        if (fullscreen) {
+            attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        else{
+            attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        getWindow().setAttributes(attrs);
     }
 
 }

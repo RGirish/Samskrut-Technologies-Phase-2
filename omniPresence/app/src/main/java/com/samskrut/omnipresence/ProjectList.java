@@ -20,7 +20,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;

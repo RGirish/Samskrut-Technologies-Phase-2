@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
@@ -17,6 +18,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -55,62 +57,58 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
         swipeLayout.setOnRefreshListener(this);
         swipeLayout.setColorScheme(android.R.color.black);
         checkForDownload();
-        display();
-    }
 
-    public void display(){
-        LinearLayout linearLayout = (LinearLayout)findViewById(R.id.splash);
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int height = displayMetrics.heightPixels;
-        linearLayout.setMinimumHeight(height);
-
-        InputStream is = null;
-        try{
-            is = openFileInput(Login.USERNAME+"_splash_0.jpg");
-        }catch(Exception e){
-            Log.e("display()","File not found yo man");
-        }
-        Bitmap bitmap = BitmapFactory.decodeStream(is);
-        Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-        linearLayout.setBackground(drawable);
-
-        final TextView skip = (TextView)findViewById(R.id.skip);
-        skip.setText("<Skip>");
-        skip.setTextSize(19);
-        skip.setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.logout)).setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                Intent mainIntent = new Intent(Splash.this, Countdown.class);
-                Splash.this.startActivity(mainIntent);
-                Splash.this.finish();
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    ((TextView) v).setTextColor(Color.parseColor("#aaffffff"));
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                    SQLiteDatabase db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
+                    db.execSQL("UPDATE session SET projectsTableName='NONE',subProjectsTableName='NONE';");
+                    db.close();
+                    Intent mainIntent = new Intent(Splash.this, Login.class);
+                    //mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    Splash.this.startActivity(mainIntent);
+                    Splash.this.finish();
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                }
+                return true;
             }
         });
 
-        final TextView logout = (TextView)findViewById(R.id.logout);
-        logout.setText("<Logout>");
-        logout.setTextSize(18);
-        logout.setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.instructions)).setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                SQLiteDatabase db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
-                db.execSQL("UPDATE session SET projectsTableName='NONE',subProjectsTableName='NONE';");
-                db.close();
-                Intent mainIntent = new Intent(Splash.this, Login.class);
-                //mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                Splash.this.startActivity(mainIntent);
-                Splash.this.finish();
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    ((TextView) v).setTextColor(Color.parseColor("#aaffffff"));
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                    startActivity(new Intent(Splash.this, Instructions.class));
+                    finish();
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                }
+                return true;
             }
         });
 
-
-        final TextView conti = (TextView)findViewById(R.id.conti);
-        conti.setTextSize(18);
-        conti.setText("<Continue>");
-        conti.setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.viewVirtualTours)).setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                startActivity(new Intent(Splash.this,Instructions.class));
-                finish();
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    ((TextView) v).setTextColor(Color.parseColor("#aaffffff"));
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                    Intent mainIntent = new Intent(Splash.this, Countdown.class);
+                    Splash.this.startActivity(mainIntent);
+                    Splash.this.finish();
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
+                }
+                return true;
             }
         });
 
@@ -270,7 +268,6 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
             dialog1.setMessage("Downloading Splash Image 1/" + notAvailableList.size());
         }else{
             dialog1.dismiss();
-            display();
         }
         CURR_COUNT=0;
         for (final int k : notAvailableList) {
@@ -289,7 +286,6 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                                     dialog1.setMessage("Downloading Splash Image "+(CURR_COUNT+1)+"/"+notAvailableList.size());
                                     if (CURR_COUNT == notAvailableList.size()) {
                                         dialog1.dismiss();
-                                        display();
                                     }
                                 } else {
                                     Log.e("Something went wrong", "Something went wrong");

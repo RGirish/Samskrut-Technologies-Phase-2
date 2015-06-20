@@ -7,4 +7,6 @@
     <string name="title_activity_countdown">Countdown</string>
     <string name="title_activity_youtube_stream">YoutubeStreamActivity</string>
     <string name="title_activity_login">Login</string>
+    <color name="login_button">#cc6733</color>
+    <color name="login_button_dark">#a85a2a</color>
 </resources>

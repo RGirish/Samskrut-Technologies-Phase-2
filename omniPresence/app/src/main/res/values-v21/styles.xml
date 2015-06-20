@@ -8,7 +8,7 @@
 
     <style name="AppThemeNoAb" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">#4CAF50</item>
-        <item name="android:colorButtonNormal">#dd430b</item>
+        <item name="android:colorButtonNormal">#cc6733</item>
         <item name="android:windowDisablePreview">true</item>
         <item name="colorPrimaryDark">#388E3C</item>
     </style>

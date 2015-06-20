@@ -12,6 +12,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name=".Login"
+            android:theme="@style/AppThemeNoAb"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,6 +26,10 @@
             android:theme="@style/AppThemeNoAb"/>
 
         <activity android:name=".MainActivity"/>
+        <activity android:name=".Splash"
+            android:theme="@style/AppThemeNoAb"/>
+        <activity android:name=".Instructions"
+            android:theme="@style/AppThemeNoAb"/>
 
         <meta-data
             android:name="com.crashlytics.ApiKey"

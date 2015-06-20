@@ -10,12 +10,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Html;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -27,7 +25,6 @@ import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-
 import java.util.List;
 
 public class Login extends AppCompatActivity {
@@ -42,15 +39,12 @@ public class Login extends AppCompatActivity {
         Crashlytics.start(this);
         setContentView(R.layout.activity_login);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-
-        getSupportActionBar().setTitle(Html.fromHtml("<font color=\"#ffffff\">unrealEstate</font>"));
+        setFullScreen(true);
 
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
         db = openOrCreateDatabase("unrealestate.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
         createTables();
-
-        db.execSQL("DELETE FROM session;");
 
         Cursor cursor = db.rawQuery("SELECT username FROM session;", null);
         try{
@@ -63,7 +57,7 @@ public class Login extends AppCompatActivity {
                 try{
                     db.execSQL("CREATE TABLE "+USERNAME+"_projects_temp(pos NUMBER, name TEXT, desc TEXT, url TEXT, username TEXT, timestamp TEXT);");
                 }catch(Exception e){}
-                startActivity(new Intent(Login.this,MainActivity.class));
+                startActivity(new Intent(Login.this,Splash.class));
                 finish();
             }
         }catch(Exception e){}
@@ -104,7 +98,7 @@ public class Login extends AppCompatActivity {
                         }catch(Exception ex){}
                         db.execSQL("DELETE FROM session;");
                         db.execSQL("INSERT INTO session VALUES('" + username + "');");
-                        startActivity(new Intent(Login.this, MainActivity.class));
+                        startActivity(new Intent(Login.this, Splash.class));
                         finish();
 
                     }catch (Exception ee){
@@ -150,7 +144,7 @@ public class Login extends AppCompatActivity {
 
             db.execSQL("DELETE FROM session;");
             db.execSQL("INSERT INTO session VALUES('"+USERNAME+"');");
-            startActivity(new Intent(Login.this, MainActivity.class));
+            startActivity(new Intent(Login.this, Splash.class));
             finish();
         }catch (Exception e){
             if(checkConnection()){
@@ -159,13 +153,20 @@ public class Login extends AppCompatActivity {
                 dialog.dismiss();
                 findViewById(R.id.firstTime).setVisibility(View.VISIBLE);
                 Toast.makeText(this,"Username and Password do not match!",Toast.LENGTH_LONG).show();
-                ((EditText)findViewById(R.id.password)).setText("");
                 ((EditText)findViewById(R.id.username)).setText("");
+                ((EditText)findViewById(R.id.password)).setText("");
+                findViewById(R.id.username).requestFocus();
             }
         }
     }
 
     public void createTables() {
+        try{
+            db.execSQL("CREATE TABLE splash(username TEXT, pos NUMBER, timestamp TEXT);");
+        }catch(Exception e){}
+        try{
+            db.execSQL("CREATE TABLE splash_temp(username TEXT, pos NUMBER, timestamp TEXT);");
+        }catch(Exception e){}
         try{
             db.execSQL("CREATE TABLE session(username TEXT);");
         }catch(Exception e){}
@@ -187,6 +188,17 @@ public class Login extends AppCompatActivity {
             InputMethodManager inputManager = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
+    }
+
+    void setFullScreen(boolean fullscreen) {
+        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        if (fullscreen) {
+            attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        else{
+            attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        getWindow().setAttributes(attrs);
     }
 
 }
