@@ -162,12 +162,6 @@ public class Login extends AppCompatActivity {
 
     public void createTables() {
         try{
-            db.execSQL("CREATE TABLE splash(username TEXT, pos NUMBER, timestamp TEXT);");
-        }catch(Exception e){}
-        try{
-            db.execSQL("CREATE TABLE splash_temp(username TEXT, pos NUMBER, timestamp TEXT);");
-        }catch(Exception e){}
-        try{
             db.execSQL("CREATE TABLE session(username TEXT);");
         }catch(Exception e){}
         try{

@@ -16,17 +16,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
 import com.parse.ParseException;
@@ -37,15 +33,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
 
     ProgressDialog dialog1;
     SQLiteDatabase db;
-    int COUNT=0,CURR_COUNT=0;
-    ArrayList<Integer> notAvailableList,toBeDeletedList;
     SwipeRefreshLayout swipeLayout;
+    int COUNT_th=0,CURR_COUNT_th=0;
+    ArrayList<Integer> notAvailableList_th,toBeDeletedList_th;
+    int COUNT=0,CURR_COUNT=0;
+    ArrayList<String> notAvailableList,toBeDeletedList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +55,9 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
         swipeLayout.setOnRefreshListener(this);
         swipeLayout.setColorScheme(android.R.color.black);
+
         checkForDownload();
+        display();
 
         (findViewById(R.id.logout)).setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -65,11 +66,10 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                     ((TextView) v).setTextColor(Color.parseColor("#aaffffff"));
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
-                    SQLiteDatabase db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
+                    SQLiteDatabase db = openOrCreateDatabase("omniPresence.db", SQLiteDatabase.CREATE_IF_NECESSARY, null);
                     db.execSQL("UPDATE session SET projectsTableName='NONE',subProjectsTableName='NONE';");
                     db.close();
                     Intent mainIntent = new Intent(Splash.this, Login.class);
-                    //mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     Splash.this.startActivity(mainIntent);
                     Splash.this.finish();
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -115,34 +115,54 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
     }
 
     public void checkForDownload(){
-        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM splash WHERE username='"+Login.USERNAME+"';", null);
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects;", null);
         cursor.moveToFirst();
         int count = cursor.getInt(0);
         if(count == 0){
             if(checkConnection()){
                 download();
             }else{
-                Toast.makeText(this, "Please check your Internet Connection!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this,"Please check your Internet Connection!",Toast.LENGTH_LONG).show();
+                (findViewById(R.id.logout)).setVisibility(View.GONE);
+                (findViewById(R.id.instructions)).setVisibility(View.GONE);
+                (findViewById(R.id.viewVirtualTours)).setVisibility(View.GONE);
             }
         }
         cursor.close();
     }
 
     public void download(){
-        dialog1 = ProgressDialog.show(this, null, "Downloading data...");
+        dialog1 = ProgressDialog.show(this,null,"Downloading data...");
         Log.e("download", "download");
 
-        final ParseQuery<ParseObject> query = ParseQuery.getQuery("Splash");
+        final ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.PROJECTS_TABLE_NAME);
         query.orderByAscending("pos");
-        query.whereEqualTo("username", Login.USERNAME);
         query.findInBackground(new FindCallback<ParseObject>() {
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null) {
                     for (ParseObject ob : objects) {
-                        db.execSQL("INSERT INTO splash_temp VALUES('" + ob.getString("username") + "'," + ob.getNumber("pos") + ",'"+ob.getUpdatedAt()+"');");
-                        Log.e("QUERY","INSERT INTO splash_temp VALUES('" + ob.getString("username") + "'," + ob.getNumber("pos") + ",'"+ob.getUpdatedAt()+"');");
+                        db.execSQL("INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
+                        Log.e("QUERY","INSERT INTO "+Login.USERNAME+"_projects_temp VALUES(" + ob.getNumber("pos") + ",'" + ob.getUpdatedAt() + "');");
                     }
-                    downloadSplashImages();
+
+                    final ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.SUBPROJECTS_TABLE_NAME);
+                    query.orderByAscending("projectPos");
+                    query.addAscendingOrder("pos");
+                    query.selectKeys(Arrays.asList("projectPos", "pos", "tts", "mediaType"));
+                    query.findInBackground(new FindCallback<ParseObject>() {
+                        public void done(List<ParseObject> objects, ParseException e) {
+                            if (e == null) {
+                                for (ParseObject ob : objects) {
+                                    db.execSQL("INSERT INTO " + Login.USERNAME + "_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getString("mediaType") + "','" + ob.getUpdatedAt() + "');");
+                                    Log.e("QUERY", "INSERT INTO " + Login.USERNAME + "_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getString("mediaType") + "','" + ob.getUpdatedAt() + "');");
+                                }
+                                downloadSplashImage();
+                            } else {
+                                Log.e("PARSE", "Error: " + e.getMessage());
+                            }
+                        }
+                    });
+
                 } else {
                     Log.e("PARSE", "Error: " + e.getMessage());
                 }
@@ -150,29 +170,56 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
         });
     }
 
-    public void downloadSplashImages() {
+    public void downloadSplashImage() {
+        Log.e("downloadSplashImage","downloadSplashImage");
 
-        Log.e("downloadSplashImages","downloadSplashImages");
+        dialog1.setMessage("Downloading Splash Image...");
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("Splash");
+        query.whereEqualTo("username", Login.USERNAME);
+        query.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null) {
+                    ParseFile myFile = objects.get(0).getParseFile("image");
+                    myFile.getDataInBackground(new GetDataCallback() {
+                        public void done(byte[] data, ParseException e) {
+                            if (e == null) {
+                                writeFile(data, Login.USERNAME+"_splash.jpg");
+                                downloadProjectsThumbnails();
+                            } else {
+                                Log.e("Something went wrong", "Something went wrong");
+                            }
+                        }
+                    });
+                } else {
+                    Log.e("PARSE", "Error: " + e.getMessage());
+                }
+            }
+        });
+    }
 
-        //SET NOTAVAILABLELIST FOR SPLASH IMAGES
-        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM splash WHERE username='"+Login.USERNAME+"';",null);
+    public void downloadProjectsThumbnails() {
+
+        Log.e("downloadProjectsTh","downloadProjectsTh");
+
+        //SET NOTAVAILABLELIST FOR PROJECTS
+        Cursor cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_projects_temp;",null);
         cursor.moveToFirst();
-        COUNT = cursor.getInt(0);
-        notAvailableList = new ArrayList<>(COUNT);
-        toBeDeletedList = new ArrayList<>(COUNT);
+        COUNT_th = cursor.getInt(0);
+        notAvailableList_th = new ArrayList<>(COUNT_th);
+        toBeDeletedList_th = new ArrayList<>(COUNT_th);
         cursor.close();
 
-        cursor = db.rawQuery("SELECT pos,timestamp FROM splash_temp WHERE username='"+Login.USERNAME+"' ORDER BY pos;", null);
+        cursor = db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects_temp ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                if (!exists(Login.USERNAME+"_splash_" + pos + ".jpg")) {
+                if (!exists(Login.USERNAME+"_" + pos + "_th.jpg")) {
                     //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
-                    notAvailableList.add(pos);
+                    notAvailableList_th.add(pos);
                 }
 
-                Cursor c = db.rawQuery("SELECT pos,timestamp FROM splash WHERE pos="+pos+" AND username='"+Login.USERNAME+"';", null);
+                Cursor c = db.rawQuery("SELECT pos,timestamp FROM "+Login.USERNAME+"_projects WHERE pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
@@ -180,7 +227,7 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                     String updatedTime = cursor.getString(1);
                     if(!currentTime.equals(updatedTime)){
                         //the item has been modified
-                        if(!notAvailableList.contains(pos)) notAvailableList.add(pos);
+                        if(!notAvailableList_th.contains(pos)) notAvailableList_th.add(pos);
                     }
                 }catch (Exception e){
                     //it's a new item and it has already been added to the list
@@ -195,18 +242,18 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
         cursor.close();
 
 
-        //SET TOBEDELETEDLIST FOR SPLASH IMAGES
-        cursor = db.rawQuery("SELECT pos FROM splash WHERE username='"+Login.USERNAME+"' ORDER BY pos;", null);
+        //SET TOBEDELETEDLIST FOR PROJECTS
+        cursor = db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects ORDER BY pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
                 int pos = cursor.getInt(0);
-                Cursor c = db.rawQuery("SELECT pos FROM splash_temp WHERE pos="+pos+" AND username='"+Login.USERNAME+"';", null);
+                Cursor c = db.rawQuery("SELECT pos FROM "+Login.USERNAME+"_projects_temp WHERE pos="+pos+";", null);
                 try {
                     c.moveToFirst();
                     int n = c.getInt(0);
                 }catch (Exception e){
-                    toBeDeletedList.add(pos);
+                    toBeDeletedList_th.add(pos);
                 }
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
@@ -218,30 +265,59 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
 
 
         String s="";
-        for(int i: notAvailableList){
+        for(int i: notAvailableList_th){
             s= s+ (i+" ");
         }
-        Log.e("notAvailableList_splash",s);
+        Log.e("notAvailableList_th",s);
         s="";
-        for(int i: toBeDeletedList){
+        for(int i: toBeDeletedList_th){
             s= s+ (i+" ");
         }
-        Log.e("toBeDeletedList_splash",s);
+        Log.e("toBeDeletedList_th",s);
 
 
 
-        //MOVE FROM TEMP TABLES TO ORIGINAL TABLES
 
 
-        db.execSQL("DELETE FROM splash WHERE username='"+Login.USERNAME+"';");
-        cursor = db.rawQuery("SELECT * FROM splash_temp WHERE username='"+Login.USERNAME+"' ORDER BY pos;", null);
+
+        //SET NOTAVAILABLELIST FOR SUBPROJECTS
+        cursor = db.rawQuery("SELECT COUNT(pos) FROM "+Login.USERNAME+"_subProjects_temp;",null);
+        cursor.moveToFirst();
+        COUNT = cursor.getInt(0);
+        notAvailableList = new ArrayList<>(COUNT);
+        toBeDeletedList = new ArrayList<>(COUNT);
+        cursor.close();
+
+        cursor = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM "+Login.USERNAME+"_subProjects_temp ORDER BY projectPos,pos;", null);
         try{
             cursor.moveToFirst();
             while(true){
-                String username = cursor.getString(0);
+                int projectPos = cursor.getInt(0);
                 int pos = cursor.getInt(1);
-                String ts = cursor.getString(2);
-                db.execSQL("INSERT INTO splash VALUES('"+username+"',"+pos+",'"+ts+"');");
+                String mediaType = cursor.getString(3);
+                if(!mediaType.startsWith("youtube")) {
+                    if (!exists(Login.USERNAME + "_" + projectPos + "_" + pos + ".jpg") && !exists(Login.USERNAME + "_" + projectPos + "_" + pos + ".mp4")) {
+                        //2 casees: case1:if its a new item. case2: if an existing item(with or without change) has been deleted somehow
+                        notAvailableList.add(projectPos + "_" + pos);
+                    }
+                }
+                Cursor c = db.rawQuery("SELECT projectPos,pos,timestamp,mediaType FROM "+Login.USERNAME+"_subProjects WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                    String mt = c.getString(3);
+                    String currentTime = c.getString(2);
+                    String updatedTime = cursor.getString(2);
+                    if(!currentTime.equals(updatedTime)){
+                        //the item has been modified
+                        if(!mt.startsWith("youtube")) {
+                            if(!notAvailableList.contains(projectPos + "_" + pos)) notAvailableList.add(projectPos + "_" + pos);
+                        }
+                    }
+                }catch (Exception e){
+                    //it's a new item and it has already been added to the list
+                }
+                c.close();
                 cursor.moveToNext();
                 if(cursor.isAfterLast()){
                     break;
@@ -249,43 +325,141 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
             }
         }catch (Exception e){}
         cursor.close();
-        db.execSQL("DELETE FROM splash_temp;");
+
+
+        //SET TOBEDELETEDLIST FOR SUBPROJECTS
+        cursor = db.rawQuery("SELECT projectPos,pos FROM "+Login.USERNAME+"_subProjects ORDER BY projectPos,pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int projectPos = cursor.getInt(0);
+                int pos = cursor.getInt(1);
+                Cursor c = db.rawQuery("SELECT projectPos,pos FROM "+Login.USERNAME+"_subProjects_temp WHERE projectPos="+projectPos+" AND pos="+pos+";", null);
+                try {
+                    c.moveToFirst();
+                    int n = c.getInt(0);
+                }catch (Exception e){
+                    toBeDeletedList.add(projectPos + "_" + pos);
+                }
+                c.close();
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+        s="";
+        for(String i: notAvailableList){
+            s= s+ (i+" ");
+        }
+        Log.e("notAvailableList",s);
+
+        s="";
+        for(String i: toBeDeletedList){
+            s= s+ (i+" ");
+        }
+        Log.e("toBeDeletedList",s);
+
+
+
+        //MOVE FROM TEMP TABLES TO ORIGINAL TABLES
+
+
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_projects;");
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_subProjects;");
+        cursor = db.rawQuery("SELECT * FROM "+Login.USERNAME+"_projects_temp ORDER BY pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int pos = cursor.getInt(0);
+                String ts = cursor.getString(1);
+                db.execSQL("INSERT INTO "+Login.USERNAME+"_projects VALUES("+pos+",'"+ts+"');");
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+        cursor = db.rawQuery("SELECT * FROM "+Login.USERNAME+"_subProjects_temp ORDER BY projectPos,pos;", null);
+        try{
+            cursor.moveToFirst();
+            while(true){
+                int projectPos = cursor.getInt(0);
+                int pos = cursor.getInt(1);
+                String tts = cursor.getString(2);
+                String mediatype = cursor.getString(3);
+                String ts = cursor.getString(4);
+                db.execSQL("INSERT INTO "+Login.USERNAME+"_subProjects VALUES("+projectPos+","+pos+",'"+tts+"','"+mediatype+"','"+ts+"');");
+                cursor.moveToNext();
+                if(cursor.isAfterLast()){
+                    break;
+                }
+            }
+        }catch (Exception e){}
+        cursor.close();
+
+        //CLEAR THE TEMP TABLES
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_projects_temp;");
+        db.execSQL("DELETE FROM "+Login.USERNAME+"_subProjects_temp;");
 
 
         //DELETE FILES IF ANY
         File dir = getFilesDir();
-        for(int i : toBeDeletedList){
-            File file = new File(dir, Login.USERNAME+"_splash_" + i + ".jpg");
+        for(int i : toBeDeletedList_th){
+            File file = new File(dir, Login.USERNAME+"_" + i + "_th.jpg");
             file.delete();
         }
+        for(String i : toBeDeletedList){
+            try {
+                File file = new File(dir, Login.USERNAME+"_" + i + ".jpg");
+                file.delete();
+                file = new File(dir, Login.USERNAME+"_" + i + ".mp4");
+                file.delete();
+            }catch (Exception e){}
+        }
+
 
 
 
         //START DOWNLOAD IF ANY
 
 
-        if(notAvailableList.size()>0){
-            dialog1.setMessage("Downloading Splash Image 1/" + notAvailableList.size());
+        if(notAvailableList_th.size()>0){
+            dialog1.setMessage("Downloading Thumbnail 1/" + notAvailableList_th.size());
         }else{
-            dialog1.dismiss();
+            if(notAvailableList.size()>0){
+                downloadSubProjectsMedia();
+            }else{
+                dialog1.dismiss();
+                display();
+            }
         }
-        CURR_COUNT=0;
-        for (final int k : notAvailableList) {
-            ParseQuery<ParseObject> query = ParseQuery.getQuery("Splash");
+        CURR_COUNT_th=0;
+        for (final int k : notAvailableList_th) {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.PROJECTS_TABLE_NAME);
             query.whereEqualTo("pos", k);
-            query.whereEqualTo("username", Login.USERNAME);
             query.findInBackground(new FindCallback<ParseObject>() {
                 public void done(List<ParseObject> objects, ParseException e) {
                     if (e == null) {
-                        ParseFile myFile = objects.get(0).getParseFile("image");
+                        ParseFile myFile = objects.get(0).getParseFile("thumbnail");
                         myFile.getDataInBackground(new GetDataCallback() {
                             public void done(byte[] data, ParseException e) {
                                 if (e == null) {
-                                    writeFile(data, Login.USERNAME+"_splash_" + k + ".jpg");
-                                    CURR_COUNT++;
-                                    dialog1.setMessage("Downloading Splash Image "+(CURR_COUNT+1)+"/"+notAvailableList.size());
-                                    if (CURR_COUNT == notAvailableList.size()) {
-                                        dialog1.dismiss();
+                                    writeFile(data, Login.USERNAME+"_" + k + "_th.jpg");
+                                    CURR_COUNT_th++;
+                                    dialog1.setMessage("Downloading Thumbnail "+(CURR_COUNT_th+1)+"/"+notAvailableList_th.size());
+                                    if (CURR_COUNT_th == notAvailableList_th.size()) {
+
+                                        if(notAvailableList.size()>0){
+                                            downloadSubProjectsMedia();
+                                        }else{
+                                            dialog1.dismiss();
+                                            display();
+                                        }
+
                                     }
                                 } else {
                                     Log.e("Something went wrong", "Something went wrong");
@@ -299,6 +473,66 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
             });
         }
 
+    }
+
+    public void downloadSubProjectsMedia(){
+
+        Log.e("SubProjectsMedia","SubProjectsMedia");
+        dialog1.setMessage("Downloading Panorama 1/" + notAvailableList.size());
+        if(notAvailableList.size()==0){
+            dialog1.dismiss();
+            display();
+        }
+        CURR_COUNT=0;
+        for (final String s : notAvailableList) {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery(Login.SUBPROJECTS_TABLE_NAME);
+            String[] parts = s.split("_");
+            final int projectPos = Integer.parseInt(parts[0]);
+            final int pos = Integer.parseInt(parts[1]);
+            query.whereEqualTo("pos", pos);
+            query.whereEqualTo("projectPos", projectPos);
+            query.findInBackground(new FindCallback<ParseObject>() {
+                public void done(List<ParseObject> objects, ParseException e) {
+                    if (e == null) {
+                        final ParseFile myFile = objects.get(0).getParseFile("photoSphere");
+                        myFile.getDataInBackground(new GetDataCallback() {
+                            public void done(byte[] data, ParseException e) {
+                                if (e == null) {
+                                    if(myFile.getName().endsWith("jpg")){
+                                        Log.e("FILENAME", "jpg");
+                                        writeFile(data, Login.USERNAME+"_" + projectPos + "_" + pos + ".jpg");
+                                    }else if(myFile.getName().endsWith("mp4")){
+                                        Log.e("FILENAME", "mp4");
+                                        writeFile(data, Login.USERNAME+"_" + projectPos + "_" + pos + ".mp4");
+                                    }
+                                    CURR_COUNT++;
+                                    dialog1.setMessage("Downloading Panorama "+(CURR_COUNT+1)+"/"+notAvailableList.size());
+                                    if (CURR_COUNT == notAvailableList.size()) {
+                                        dialog1.dismiss();
+                                        display();
+                                    }
+                                } else {
+                                    Log.e("Something went wrong", "Something went wrong");
+                                }
+                            }
+                        });
+                    } else {
+                        Log.e("PARSE", "Error: " + e.getMessage());
+                    }
+                }
+            });
+        }
+    }
+
+    public void display(){
+        LinearLayout ll = (LinearLayout)findViewById(R.id.splashBackground);
+        InputStream is = null;
+        try{
+            is = openFileInput(Login.USERNAME + "_splash.jpg");
+        }catch (Exception ex){}
+        Bitmap bitmap = BitmapFactory.decodeStream(is);
+        Drawable d = new BitmapDrawable(getResources(), bitmap);
+        ll.setBackground(d);
     }
 
     private void setFullscreen(boolean fullscreen) {

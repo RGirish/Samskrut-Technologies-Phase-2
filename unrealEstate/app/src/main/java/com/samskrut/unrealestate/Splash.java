@@ -55,7 +55,6 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
         swipeLayout.setColorScheme(android.R.color.black);
 
         checkForDownload();
-
         display();
 
         (findViewById(R.id.logout)).setOnTouchListener(new View.OnTouchListener() {

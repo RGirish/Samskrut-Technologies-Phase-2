@@ -18,21 +18,12 @@ public class ParallaxFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
         super.onCreateView(inflater, container, savedInstanceState);
-
         View v = inflater.inflate(R.layout.fragment_parallax, container, false);
         final ImageView image = (ImageView) v.findViewById(R.id.image);
 
         int pos = getArguments().getInt("pos");
-        InputStream is = null;
-        try{
-            is = getActivity().openFileInput(Login.USERNAME+"_splash_" + pos + ".jpg");
-        }catch (Exception e){
-            Log.e("JON SNOW KNOWS NOTHING", "ERROR IN PARALLAX FRAGMENT");
-        }
-        Bitmap bitmap = BitmapFactory.decodeStream(is);
-        image.setImageBitmap(bitmap);
+        image.setImageResource(pos);
         image.post(new Runnable() {
             @Override
             public void run() {
