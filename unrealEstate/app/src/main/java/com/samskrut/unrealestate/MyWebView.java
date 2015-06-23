@@ -15,10 +15,13 @@ public class MyWebView extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_web_view);
         setFullscreen(true);
+
         Intent intent = getIntent();
         String url = intent.getStringExtra("url");
+
         final ProgressDialog dialog = ProgressDialog.show(this,null,"Loading - 0%",true);
 
+        //Set up the webview with the url extracted from the Intent and set a progress listener to update the ProgressDialog
         WebView webView = (WebView)findViewById(R.id.mwv);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
@@ -32,8 +35,11 @@ public class MyWebView extends AppCompatActivity {
         webView.loadUrl(url);
     }
 
-    private void setFullscreen(boolean fullscreen)
-    {
+    /**
+     * A function to make the app go full screen- hides the status bar
+     * @param fullscreen a value of true goes full screen, false comes back from full screen
+     */
+    private void setFullscreen(boolean fullscreen){
         WindowManager.LayoutParams attrs = getWindow().getAttributes();
         if (fullscreen){
             attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;

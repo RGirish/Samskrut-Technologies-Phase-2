@@ -3,6 +3,7 @@ package com.samskrut.unrealestate;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -12,31 +13,40 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.crashlytics.android.Crashlytics;
 import java.io.InputStream;
+
+import io.fabric.sdk.android.services.common.SafeToast;
 
 public class MainActivity extends AppCompatActivity{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Crashlytics.start(this);
         setContentView(R.layout.activity_main);
         getSupportActionBar().setTitle(Html.fromHtml("<font color=\"#ffffff\">unrealEstate</font>"));
         displayEverything();
     }
 
+    /**
+     * To dynamically add all the views to the screen for the listview.
+     */
     public void displayEverything(){
 
         LinearLayout mainll = (LinearLayout)findViewById(R.id.mainll);
         mainll.removeAllViews();
 
+        //Iterate through the projects table and for each item, add a view to the linearlayout
         Cursor cursor = Login.db.rawQuery("SELECT pos,name,desc,url FROM "+Login.USERNAME+"_projects WHERE username='"+Login.USERNAME+"' ORDER BY pos;",null);
         try{
             cursor.moveToFirst();
@@ -111,4 +121,33 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
+    /**
+     * Set up the actionbar icon for logout
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    /**
+     * To clear the session when the user clicks on the logout button and go back to the login activity.
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.actionLogout:
+                SQLiteDatabase db = openOrCreateDatabase("unrealestate.db", SQLiteDatabase.CREATE_IF_NECESSARY, null);
+                db.execSQL("DELETE FROM session;");
+                db.close();
+                Intent mainIntent = new Intent(this, Login.class);
+                startActivity(mainIntent);
+                Toast.makeText(MainActivity.this, "Logged out!", Toast.LENGTH_LONG).show();
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 }

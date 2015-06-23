@@ -29,6 +29,7 @@ import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
+import io.fabric.sdk.android.Fabric;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,7 +45,7 @@ public class Login extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Crashlytics.start(this);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_login);
         setFullScreen(true);
         try{ParseCrashReporting.enable(this);}catch (Exception e){}

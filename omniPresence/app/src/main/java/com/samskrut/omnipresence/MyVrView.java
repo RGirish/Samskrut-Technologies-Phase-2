@@ -378,7 +378,9 @@ public class MyVrView extends CardboardActivity implements CardboardView.StereoR
     public void onNewFrame(HeadTransform headTransform) {}
 
     @Override
-    public void onDrawEye(Eye eye) {}
+    public void onDrawEye(Eye eye) {
+
+    }
 
     @Override
     public void onFinishFrame(Viewport viewport) {}

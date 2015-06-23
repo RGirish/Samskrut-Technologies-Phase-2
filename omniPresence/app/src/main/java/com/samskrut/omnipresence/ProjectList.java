@@ -2,7 +2,6 @@
 package com.samskrut.omnipresence;
 
 import android.animation.ValueAnimator;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -14,8 +13,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Vibrator;
@@ -38,18 +35,8 @@ import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
 import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
-import com.parse.FindCallback;
-import com.parse.GetDataCallback;
-import com.parse.ParseException;
-import com.parse.ParseFile;
-import com.parse.ParseObject;
-import com.parse.ParseQuery;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -73,7 +60,6 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
         super.onCreate(savedInstanceState);
         overridePendingTransition(R.anim.slide_up, R.anim.slide_down);
         setContentView(R.layout.activity_project_list);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -209,14 +195,12 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
 
     protected void onPause() {
         super.onPause();
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         senSensorManager.unregisterListener(this);
     }
 
     @Override
     public void onResume(){
         super.onResume();
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         tts.stop();
         View decorView = getWindow().getDecorView();
@@ -343,7 +327,6 @@ public class ProjectList extends CardboardActivity implements TextToSpeech.OnIni
             tts.stop();
             tts.shutdown();
         }
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onDestroy();
     }
 

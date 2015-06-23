@@ -49,6 +49,7 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.splash);
         setFullscreen(true);
         db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
@@ -112,6 +113,24 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
             }
         });
 
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     public void checkForDownload(){
@@ -563,13 +582,17 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
 
     @Override
     public void onRefresh() {
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                swipeLayout.setRefreshing(false);
-            }
-        }, 1000);
-        download();
+        if(checkConnection()) {
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    swipeLayout.setRefreshing(false);
+                }
+            }, 1000);
+            download();
+        }else{
+            Toast.makeText(Splash.this, "Check your Internet Connection!", Toast.LENGTH_LONG).show();
+        }
     }
 
     public boolean checkConnection(){

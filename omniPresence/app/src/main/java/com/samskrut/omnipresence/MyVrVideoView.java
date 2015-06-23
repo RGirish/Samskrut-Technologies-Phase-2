@@ -372,7 +372,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
             int COUNT_1 = cursor1.getInt(0);
             cursor1.close();
             if (_projectPos + 1 < COUNT_1) {
-                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM subProjects WHERE "+Login.USERNAME+"_projectPos=" + (_projectPos + 1) + " AND pos=0;", null);
+                Cursor c = ProjectList.db.rawQuery("SELECT mediatype FROM "+Login.USERNAME+"_subProjects WHERE projectPos=" + (_projectPos + 1) + " AND pos=0;", null);
                 c.moveToFirst();
                 String type = c.getString(0);
                 if(type.equals("image")){
