@@ -14,6 +14,8 @@ import android.widget.TextView;
 
 public class Countdown extends AppCompatActivity {
 
+    CountDownTimer countDownTimer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,7 +27,7 @@ public class Countdown extends AppCompatActivity {
         startActivity(intent);
         finish();*/
 
-        new CountDownTimer(6000, 1000) {
+        countDownTimer = new CountDownTimer(11000, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 ((TextView)findViewById(R.id.count)).setText(String.valueOf(millisUntilFinished/1000));
@@ -35,8 +37,17 @@ public class Countdown extends AppCompatActivity {
                 startActivity(intent);
                 finish();
             }
-        }.start();
+        };
+
+        countDownTimer.start();
     }
+
+    public void onBackPressed(){
+        countDownTimer.cancel();
+        super.onBackPressed();
+    }
+
+    
 
     private void setFullscreen(boolean fullscreen) {
         WindowManager.LayoutParams attrs = getWindow().getAttributes();

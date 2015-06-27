@@ -41,7 +41,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class MyVrVideoView extends CardboardActivity implements PFAssetObserver, OnSeekBarChangeListener, PFHotspotClickListener, SensorEventListener, CardboardView.StereoRenderer {
+public class MyVrVideoView extends CardboardActivity implements PFAssetObserver, OnSeekBarChangeListener, SensorEventListener, CardboardView.StereoRenderer {
 
 	PFView _pfview;
 	PFAsset _pfasset;
@@ -153,18 +153,6 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         _pfview.setBlindSpotPosition(1);
         _pfview.setBlindSpotScale(1.5f);
         _pfview.setMode(2,0);
-
-        PFHotspot hp1 = _pfview.createHotspot(BitmapFactory.decodeResource(getResources(), R.raw.hotspot));
-        hp1.setTag(10);
-        hp1.setCoordinates(60, 40, 0);
-        hp1.setClickListener(this);
-
-        PFHotspot hp2 = _pfview.createHotspot(BitmapFactory.decodeResource(getResources(), R.raw.hotspot));
-        hp2.setTag(20);
-        hp2.setCoordinates(0, 40, 0);
-        hp2.setClickListener(this);
-
-
         _frameContainer.addView(_pfview.getView(), 0);
 
 
@@ -318,13 +306,6 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 	public void onStopTrackingTouch(SeekBar seekbar) {
 		_pfasset.setPLaybackTime(seekbar.getProgress());
 		_updateThumb = true;
-	}
-
-    public void onClick(PFHotspot hotspot) {
-        hotspot.animate();
-        //hotspot.setEnabled(false);
-        Toast.makeText(MyVrVideoView.this, hotspot.getTag(), Toast.LENGTH_SHORT).show();
-        Log.d("SimplePlayer", "Hotspot clicked: "+hotspot.getTag());
 	}
 
 	@Override

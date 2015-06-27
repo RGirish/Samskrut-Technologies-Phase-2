@@ -4,17 +4,6 @@
     android:id="@+id/splashBackground"
     android:layout_width="match_parent">
 
-<android.support.v4.widget.SwipeRefreshLayout
-    android:id="@+id/swipe_container"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
-
-    <ScrollView
-        android:id="@+id/scroll"
-        android:paddingTop="50dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
         <LinearLayout
             android:orientation="vertical"
             android:layout_gravity="bottom"
@@ -34,9 +23,5 @@
 
 
         </LinearLayout>
-
-       </ScrollView>
-
-   </android.support.v4.widget.SwipeRefreshLayout>
 
 </LinearLayout>

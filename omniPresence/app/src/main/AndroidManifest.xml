@@ -29,12 +29,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".ProjectList"
             android:screenOrientation="landscape" />
+
         <activity
             android:name=".MyVrView"
             android:screenOrientation="landscape" />
+
         <activity
             android:name=".MyVrVideoView"
             android:screenOrientation="landscape" />
@@ -48,18 +51,22 @@
             android:label="@string/title_activity_countdown"
             android:screenOrientation="landscape" >
         </activity>
+
         <activity
             android:name=".YoutubeStreamActivity"
             android:label="@string/title_activity_youtube_stream" >
         </activity>
+
         <activity
             android:screenOrientation="portrait"
             android:name=".Splash">
         </activity>
+
         <activity
             android:screenOrientation="portrait"
             android:name=".Instructions">
         </activity>
+
     </application>
 
 </manifest>

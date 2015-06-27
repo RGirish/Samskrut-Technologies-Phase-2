@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -71,8 +72,10 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                     db.execSQL("UPDATE session SET projectsTableName='NONE',subProjectsTableName='NONE';");
                     db.close();
                     Intent mainIntent = new Intent(Splash.this, Login.class);
-                    Splash.this.startActivity(mainIntent);
-                    Splash.this.finish();
+                    mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(mainIntent);
+                    Toast.makeText(Splash.this, "Logged out!", Toast.LENGTH_LONG).show();
+                    finish();
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                 }
@@ -88,7 +91,6 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                     startActivity(new Intent(Splash.this, Instructions.class));
-                    finish();
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                 }
@@ -104,8 +106,7 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                     Intent mainIntent = new Intent(Splash.this, Countdown.class);
-                    Splash.this.startActivity(mainIntent);
-                    Splash.this.finish();
+                    startActivity(mainIntent);
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                 }
@@ -175,7 +176,21 @@ public class Splash extends AppCompatActivity implements SwipeRefreshLayout.OnRe
                                     db.execSQL("INSERT INTO " + Login.USERNAME + "_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getString("mediaType") + "','" + ob.getUpdatedAt() + "');");
                                     Log.e("QUERY", "INSERT INTO " + Login.USERNAME + "_subProjects_temp VALUES(" + ob.getNumber("projectPos") + ",'" + ob.getNumber("pos") + "','" + ob.getString("tts") + "','" + ob.getString("mediaType") + "','" + ob.getUpdatedAt() + "');");
                                 }
-                                downloadSplashImage();
+                                db.execSQL("DELETE FROM login;");
+                                final ParseQuery<ParseObject> query = ParseQuery.getQuery("Login");
+                                query.findInBackground(new FindCallback<ParseObject>() {
+                                    public void done(List<ParseObject> objects, ParseException e) {
+                                        if (e == null) {
+                                            for (ParseObject ob : objects) {
+                                                db.execSQL("INSERT INTO login VALUES('" + ob.getString("username") + "','" + ob.getString("password") + "','"+ ob.getString("projectsTableName") +"','"+ ob.getString("subProjectsTableName") +"');");
+                                                Log.e("QUERY","INSERT INTO login VALUES('" + ob.getString("username") + "','" + ob.getString("password") + "','"+ ob.getString("projectsTableName") +"','"+ ob.getString("subProjectsTableName") +"');");
+                                            }
+                                            downloadSplashImage();
+                                        } else {
+                                            Log.e("PARSE", "Error: " + e.getMessage());
+                                        }
+                                    }
+                                });
                             } else {
                                 Log.e("PARSE", "Error: " + e.getMessage());
                             }
