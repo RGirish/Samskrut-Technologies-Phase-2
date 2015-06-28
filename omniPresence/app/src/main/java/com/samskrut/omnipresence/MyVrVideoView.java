@@ -1,3 +1,7 @@
+/**
+ * For 360 Videos we are using the library PanFrame. (Check out panframe.com)
+ * 80% of this code is from the library itself. I've modified and added a couple of more lines as per our need.
+ */
 package com.samskrut.omnipresence;
 
 import android.content.Context;
@@ -41,7 +45,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class MyVrVideoView extends CardboardActivity implements PFAssetObserver, OnSeekBarChangeListener, SensorEventListener, CardboardView.StereoRenderer {
+public class MyVrVideoView extends CardboardActivity implements PFAssetObserver, SensorEventListener, CardboardView.StereoRenderer {
 
 	PFView _pfview;
 	PFAsset _pfasset;
@@ -49,10 +53,10 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 	boolean _updateThumb = true;
     Timer _scrubberMonitorTimer;
     ViewGroup _frameContainer;
-	Button _stopButton;
+	/*Button _stopButton;
 	Button _playButton;
 	Button _touchButton;
-	SeekBar _scrubber;
+	SeekBar _scrubber;*/
     float X,Y,Z;
     int _projectPos=0,_pos=0;
     private SensorManager senSensorManager;
@@ -75,19 +79,19 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         _frameContainer = (ViewGroup) findViewById(R.id.framecontainer);
         _frameContainer.setBackgroundColor(0xFF000000);
         
-		_playButton = (Button)findViewById(R.id.playbutton);     
-		_stopButton = (Button)findViewById(R.id.stopbutton);      
-		_touchButton = (Button)findViewById(R.id.touchbutton);        
-		_scrubber = (SeekBar)findViewById(R.id.scrubber); 
-		
-		_playButton.setOnClickListener(playListener);               
-		_stopButton.setOnClickListener(stopListener);        		
-		_touchButton.setOnClickListener(touchListener);         
+		/*_playButton = (Button)findViewById(R.id.playbutton);
+		_stopButton = (Button)findViewById(R.id.stopbutton);
+		_touchButton = (Button)findViewById(R.id.touchbutton);
+		_scrubber = (SeekBar)findViewById(R.id.scrubber);
+
+		_playButton.setOnClickListener(playListener);
+		_stopButton.setOnClickListener(stopListener);
+		_touchButton.setOnClickListener(touchListener);
 		_scrubber.setOnSeekBarChangeListener(this);
-		
+
 		_scrubber.setEnabled(false);
 
-		showControls(true);
+		showControls(true);*/
 
         //Text To Speech
         ProjectList.tts.stop();
@@ -125,7 +129,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 	    	_pfview.handleOrientationChange();
 	}
 
-    public void showControls(boolean bShow){
+    /*public void showControls(boolean bShow){
     	int visibility = View.GONE;
     	
     	if (bShow)
@@ -141,7 +145,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 			if (!_pfview.supportsNavigationMode(PFNavigationMode.MOTION))
 				_touchButton.setVisibility(View.GONE);
 		}		
-    }
+    }*/
 
     public void loadVideo(String filename)
     {
@@ -154,9 +158,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         _pfview.setBlindSpotScale(1.5f);
         _pfview.setMode(2,0);
         _frameContainer.addView(_pfview.getView(), 0);
-
-
-        showControls(false);
+        //showControls(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -177,7 +179,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 				break;
 			case PLAYING:
 				Log.d("SimplePlayer", "Playing");
-		        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+/*		        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 				_scrubber.setEnabled(true);
 				_scrubber.setMax((int) asset.getDuration());
 				_playButton.setText("pause");
@@ -191,26 +193,26 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 						}
 					};
 					_scrubberMonitorTimer.schedule(task, 0, 33);
-				}
+				}*/
 				break;
 			case PAUSED:
 				Log.d("SimplePlayer", "Paused");
-				_playButton.setText("play");
-		        _pfview.injectImageFromResource(R.raw.pausescreen);
+				/*_playButton.setText("play");
+		        _pfview.injectImageFromResource(R.raw.pausescreen);*/
 				break;
 			case STOPPED:
 				Log.d("SimplePlayer", "Stopped");
-				_playButton.setText("play");
+				/*_playButton.setText("play");
 				_scrubberMonitorTimer.cancel();
 				_scrubberMonitorTimer.purge();
 				_scrubberMonitorTimer = null;
 				_scrubber.setProgress(0);
-				_scrubber.setEnabled(false);
+				_scrubber.setEnabled(false);*/
 		        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 				break;
 			case COMPLETE:
 				Log.d("SimplePlayer", "Complete");
-				_playButton.setText("play");
+				//_playButton.setText("play");
 				_scrubberMonitorTimer.cancel();
 				_scrubberMonitorTimer.purge();
 				_scrubberMonitorTimer = null;
@@ -222,7 +224,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 		}
 	}
 
-	private OnClickListener playListener = new OnClickListener() {
+	/*private OnClickListener playListener = new OnClickListener() {
 		public void onClick(View v) {
 
 			if (_pfasset == null)
@@ -280,7 +282,7 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
 				_pfview.setNavigationMode(_currentNavigationMode);
 			}
 		}
-	};
+	};*/
 
     public void onPause() {
         super.onPause(); 
@@ -297,16 +299,16 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
-	public void onProgressChanged (SeekBar seekbar, int progress, boolean fromUser) {}
+	//public void onProgressChanged (SeekBar seekbar, int progress, boolean fromUser) {}
 
-	public void onStartTrackingTouch(SeekBar seekbar) {
+	/*public void onStartTrackingTouch(SeekBar seekbar) {
 		_updateThumb = false;
 	}
 
 	public void onStopTrackingTouch(SeekBar seekbar) {
 		_pfasset.setPLaybackTime(seekbar.getProgress());
 		_updateThumb = true;
-	}
+	}*/
 
 	@Override
     public void onCardboardTrigger(){
@@ -475,7 +477,6 @@ public class MyVrVideoView extends CardboardActivity implements PFAssetObserver,
         }
         return true;
     }
-
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {}

@@ -25,27 +25,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.crashlytics.android.Crashlytics;
+import com.nispok.snackbar.Snackbar;
+import com.nispok.snackbar.SnackbarManager;
+import com.nispok.snackbar.enums.SnackbarType;
+import com.nispok.snackbar.listeners.ActionClickListener;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.fabric.sdk.android.services.common.SafeToast;
 
 public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
 
@@ -204,9 +202,9 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 db.execSQL("DELETE FROM session;");
                 db.close();
                 Intent mainIntent = new Intent(this, Login.class);
+                mainIntent.putExtra("loggedout", true);
                 mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(mainIntent);
-                Toast.makeText(MainActivity.this, "Logged out!", Toast.LENGTH_LONG).show();
                 finish();
                 return true;
             default:
@@ -243,7 +241,20 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
             if (checkConnection()) {
                 download();
             } else {
-                Toast.makeText(this, "Please check your Internet Connection!", Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, "Please check your Internet Connection!", Toast.LENGTH_LONG).show();
+                //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+                SnackbarManager.show(
+                        Snackbar.with(getApplicationContext())
+                                .type(SnackbarType.MULTI_LINE)
+                                .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                                .text("No Internet Connection!")
+                                .actionLabel("CLOSE")
+                                .actionListener(new ActionClickListener() {
+                                    @Override
+                                    public void onActionClicked(Snackbar snackbar) {
+                                        SnackbarManager.dismiss();
+                                    }
+                                }), MainActivity.this);
                 (findViewById(R.id.viewVirtualTours)).setVisibility(View.GONE);
             }
         }

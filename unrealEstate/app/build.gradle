@@ -40,6 +40,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: 'Parse-*.jar')
     compile fileTree(dir: 'libs', include: 'ParseCrashReporting-*.jar')
     compile 'com.xgc1986.android:parallaxpagertransformer:1.0.3'
+    compile 'com.nispok:snackbar:2.10.+'
     compile('com.crashlytics.sdk.android:crashlytics:2.3.2@aar') {
         transitive = true;
     }

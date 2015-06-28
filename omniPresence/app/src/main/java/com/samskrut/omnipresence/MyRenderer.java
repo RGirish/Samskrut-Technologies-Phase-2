@@ -38,6 +38,10 @@ public class MyRenderer extends RajawaliCardboardRenderer {
     @Override
     protected void initScene() {
 
+        ///////////////////////////////////////////////////////////////////////////
+        /*
+            This is the block you'll need to modify if at all.
+         */
         InputStream is = null;
         try{
             is = contextWrapper.openFileInput(Login.USERNAME+"_"+projectPos + "_" + pos + ".jpg");
@@ -47,6 +51,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
 
         Bitmap bitmap = BitmapFactory.decodeStream(is);
         Sphere sphere = createPhotoSphereWithTexture(new Texture("photo", bitmap));
+
+        ///////////////////////////////////////////////////////////////////////////
 
         getCurrentScene().addChild(sphere);
         getCurrentCamera().setPosition(Vector3.ZERO);

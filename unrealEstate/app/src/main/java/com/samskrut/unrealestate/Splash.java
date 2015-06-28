@@ -4,7 +4,6 @@ package com.samskrut.unrealestate;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -21,7 +20,10 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.nispok.snackbar.Snackbar;
+import com.nispok.snackbar.SnackbarManager;
+import com.nispok.snackbar.enums.SnackbarType;
+import com.nispok.snackbar.listeners.ActionClickListener;
 import com.parse.FindCallback;
 import com.parse.GetDataCallback;
 import com.parse.ParseException;
@@ -36,7 +38,6 @@ import java.util.List;
 
 public class Splash extends AppCompatActivity{
 
-    SQLiteDatabase db;
     ProgressDialog dialog1;
 
     @Override
@@ -45,10 +46,22 @@ public class Splash extends AppCompatActivity{
 
         setContentView(R.layout.splash);
         setFullscreen(true);
-        db = openOrCreateDatabase("unrealestate.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
 
         if( !exists(Login.USERNAME + "_splash.jpg") && !checkConnection() ){
-            Toast.makeText(Splash.this, "Check your Internet Connection!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(Splash.this, "Check your Internet Connection!", Toast.LENGTH_SHORT).show();
+            //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+            SnackbarManager.show(
+                    Snackbar.with(getApplicationContext())
+                            .type(SnackbarType.MULTI_LINE)
+                            .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                            .text("No Internet Connection!")
+                            .actionLabel("CLOSE")
+                            .actionListener(new ActionClickListener() {
+                                @Override
+                                public void onActionClicked(Snackbar snackbar) {
+                                    SnackbarManager.dismiss();
+                                }
+                            }), Splash.this);
             findViewById(R.id.viewVirtualTours).setVisibility(View.GONE);
             return;
         }
@@ -67,7 +80,7 @@ public class Splash extends AppCompatActivity{
                     //When finger goes down on the text, change the text color a little to visually show that it's beign clicked
                     ((TextView) v).setTextColor(Color.parseColor("#aaffffff"));
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    //When figner goes up, a click is complete. So change the color back and start the next activity.
+                    //When finger goes up, a click is complete. So change the color back and start the next activity.
                     ((TextView) v).setTextColor(Color.parseColor("#ffffff"));
                     Intent mainIntent = new Intent(Splash.this, MainActivity.class);
                     startActivity(mainIntent);
@@ -119,7 +132,20 @@ public class Splash extends AppCompatActivity{
                             } else {
                                 findViewById(R.id.viewVirtualTours).setVisibility(View.GONE);
                                 dialog1.dismiss();
-                                Toast.makeText(Splash.this, "Something went wrong", Toast.LENGTH_LONG).show();
+                                //Toast.makeText(Splash.this, "Something went wrong", Toast.LENGTH_LONG).show();
+                                //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+                                SnackbarManager.show(
+                                        Snackbar.with(getApplicationContext())
+                                                .type(SnackbarType.MULTI_LINE)
+                                                .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                                                .text("Something went wrong! Try again.")
+                                                .actionLabel("CLOSE")
+                                                .actionListener(new ActionClickListener() {
+                                                    @Override
+                                                    public void onActionClicked(Snackbar snackbar) {
+                                                        SnackbarManager.dismiss();
+                                                    }
+                                                }), Splash.this);
                                 Log.e("Something went wrong", "Something went wrong");
                             }
                         }

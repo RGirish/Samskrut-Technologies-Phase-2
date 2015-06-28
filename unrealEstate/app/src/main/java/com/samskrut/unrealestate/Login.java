@@ -10,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,6 +23,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.crashlytics.android.Crashlytics;
+import com.nispok.snackbar.Snackbar;
+import com.nispok.snackbar.SnackbarManager;
+import com.nispok.snackbar.enums.SnackbarType;
+import com.nispok.snackbar.listeners.ActionClickListener;
 import com.parse.FindCallback;
 import com.parse.Parse;
 import com.parse.ParseCrashReporting;
@@ -47,6 +52,29 @@ public class Login extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         setFullScreen(true);
+
+        if(getIntent().getBooleanExtra("loggedout", false)){
+            //Toast.makeText(Login.this, "Logged out!", Toast.LENGTH_LONG).show();
+            //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    SnackbarManager.show(
+                            Snackbar.with(getApplicationContext())
+                                    .type(SnackbarType.MULTI_LINE)
+                                    .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                                    .text("Logged out!")
+                                    .actionLabel("CLOSE")
+                                    .actionListener(new ActionClickListener() {
+                                        @Override
+                                        public void onActionClicked(Snackbar snackbar) {
+                                            SnackbarManager.dismiss();
+                                        }
+                                    }), Login.this);
+                }
+            }, 1000);
+        }
 
         //set up Parse
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
@@ -157,7 +185,20 @@ public class Login extends AppCompatActivity {
                         //This means the username-password pair is wrong, or the user still hasn't signed up
                         Log.e(ee.getMessage(),ee.toString());
                         dialog.dismiss();
-                        Toast.makeText(Login.this,"Username and Password do not match!",Toast.LENGTH_LONG).show();
+                        //Toast.makeText(Login.this,"Username and Password do not match!",Toast.LENGTH_LONG).show();
+                        //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+                        SnackbarManager.show(
+                                Snackbar.with(getApplicationContext())
+                                        .type(SnackbarType.MULTI_LINE)
+                                        .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                                        .text("Wrong credentials!")
+                                        .actionLabel("CLOSE")
+                                        .actionListener(new ActionClickListener() {
+                                            @Override
+                                            public void onActionClicked(Snackbar snackbar) {
+                                                SnackbarManager.dismiss();
+                                            }
+                                        }), Login.this);
                         ((EditText)findViewById(R.id.password)).setText("");
                         ((EditText)findViewById(R.id.username)).setText("");
                     }
@@ -180,7 +221,20 @@ public class Login extends AppCompatActivity {
         String password = ((EditText)findViewById(R.id.password)).getText().toString();
 
         if(username.equals("") || password.equals("")){
-            Toast.makeText(Login.this, "Don't leave the fields empty!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(Login.this, "Don't leave the fields empty!", Toast.LENGTH_SHORT).show();
+            //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+            SnackbarManager.show(
+                    Snackbar.with(getApplicationContext())
+                            .type(SnackbarType.MULTI_LINE)
+                            .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                            .text("Fields are empty!")
+                            .actionLabel("CLOSE")
+                            .actionListener(new ActionClickListener() {
+                                @Override
+                                public void onActionClicked(Snackbar snackbar) {
+                                    SnackbarManager.dismiss();
+                                }
+                            }), Login.this);
             dialog.dismiss();
             return;
         }
@@ -215,7 +269,20 @@ public class Login extends AppCompatActivity {
             }else{
                 dialog.dismiss();
                 findViewById(R.id.firstTime).setVisibility(View.VISIBLE);
-                Toast.makeText(this,"Username and Password do not match!",Toast.LENGTH_LONG).show();
+                //Toast.makeText(this,"Username and Password do not match!",Toast.LENGTH_LONG).show();
+                //SnackbarManager.show(Snackbar.with(Login.this).text("Username and Password do not match!"));
+                SnackbarManager.show(
+                        Snackbar.with(getApplicationContext())
+                                .type(SnackbarType.MULTI_LINE)
+                                .duration(Snackbar.SnackbarDuration.LENGTH_LONG)
+                                .text("Wrong credentials!")
+                                .actionLabel("CLOSE")
+                                .actionListener(new ActionClickListener() {
+                                    @Override
+                                    public void onActionClicked(Snackbar snackbar) {
+                                        SnackbarManager.dismiss();
+                                    }
+                                }), Login.this);
                 ((EditText)findViewById(R.id.username)).setText("");
                 ((EditText)findViewById(R.id.password)).setText("");
                 findViewById(R.id.username).requestFocus();
