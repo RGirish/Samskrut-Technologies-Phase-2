@@ -1,7 +1,10 @@
 package com.samskrut.unrealestate;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.WindowManager;
@@ -15,6 +18,11 @@ public class MyWebView extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_web_view);
         setFullscreen(true);
+
+        if(!checkConnection()){
+            setContentView(R.layout.no_internet);
+            return;
+        }
 
         Intent intent = getIntent();
         String url = intent.getStringExtra("url");
@@ -47,5 +55,16 @@ public class MyWebView extends AppCompatActivity {
             attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
         }
         getWindow().setAttributes(attrs);
+    }
+
+    /**
+     * A function to check if there is Internet conn or not - checks both WiFi and Mobile Data
+     * @return true if there is Internet conn, false if not.
+     */
+    public boolean checkConnection(){
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
+        if (activeInfo == null ) return false;
+        else return true;
     }
 }

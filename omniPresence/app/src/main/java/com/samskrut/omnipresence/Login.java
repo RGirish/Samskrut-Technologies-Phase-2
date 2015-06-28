@@ -1,4 +1,8 @@
-
+/**
+ * This class is exactly similar to the Login class in UE, with only very small differences.
+ * The db structure alone changes here. Different tables are used with this app. Take a note of that alone.
+ * The rest of the functioning is exactly similar to the Login of UE.
+ */
 package com.samskrut.omnipresence;
 
 import android.app.ProgressDialog;
@@ -28,12 +32,7 @@ import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
-
 import io.fabric.sdk.android.Fabric;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 
 public class Login extends AppCompatActivity {
@@ -45,19 +44,21 @@ public class Login extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         Fabric.with(this, new Crashlytics());
+
         setContentView(R.layout.activity_login);
         setFullScreen(true);
+
         try{ParseCrashReporting.enable(this);}catch (Exception e){}
         Parse.initialize(this, "Sq2yle2ei4MmMBXAChjGksJDqlwma3rjarvoZCsk", "vMw4I2I0fdSD1frBohAvWCaXZYqLaHZ8ljnwqavg");
         db = openOrCreateDatabase("omniPresence.db",SQLiteDatabase.CREATE_IF_NECESSARY, null);
-
         createTables();
 
         Cursor cursor = db.rawQuery("SELECT projectsTableName,subProjectsTableName,username FROM session;", null);
         try{
             cursor.moveToFirst();
-            PROJECTS_TABLE_NAME = cursor.getString(0);
+            PROJECTS_TABLE_NAME = cursor.getString(0);//exception is thrown here if there is no session
             SUBPROJECTS_TABLE_NAME = cursor.getString(1);
             USERNAME = cursor.getString(2);
             try{
@@ -78,6 +79,8 @@ public class Login extends AppCompatActivity {
             }
         }catch(Exception e){}
 
+        //The ripple effect on touch for Lollipop doesn't work below Lollipop. So, for lower android versions,
+        //we change the bg color of the button on touch to a darker shade; just to visually show the click.
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             final Button loginButton = (Button) findViewById(R.id.loginButton);
             loginButton.setOnTouchListener(new View.OnTouchListener() {

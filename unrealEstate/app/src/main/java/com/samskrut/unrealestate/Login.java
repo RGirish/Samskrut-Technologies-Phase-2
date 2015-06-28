@@ -8,13 +8,16 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -72,6 +75,27 @@ public class Login extends AppCompatActivity {
                 finish();
             }
         }catch(Exception e){}
+
+        //The ripple effect on touch for Lollipop doesn't work below Lollipop. So, for lower android versions,
+        //we change the bg color of the button on touch to a darker shade; just to visually show the click.
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            final Button loginButton = (Button) findViewById(R.id.loginButton);
+            loginButton.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button_dark));
+                    } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button));
+                        hideKeyboard();
+                        onClickLogin(null);
+                    } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        loginButton.setBackgroundColor(getResources().getColor(R.color.login_button));
+                    }
+                    return true;
+                }
+            });
+        }
 
         //To call the onclick function when the 'Go' button at the bottom-right end of the keyboard is clicked after typing the password
         EditText editText = (EditText)findViewById(R.id.password);

@@ -20,6 +20,7 @@
         <ImageView
             android:src="@mipmap/logo"
             android:layout_width="150dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="20dp"
             android:layout_height="150dp" />
 
@@ -115,7 +116,6 @@
         <Button
             android:layout_width="match_parent"
             android:layout_marginLeft="40dp"
-            android:id="@+id/loginButton"
             android:layout_marginRight="40dp"
             android:text="Login"
             android:padding="20dp"

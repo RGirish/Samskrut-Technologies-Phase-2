@@ -1,19 +1,21 @@
+/**
+ * All you need to know about this class is that, when you give it the projectPos, pos and the context,
+ * it will render that particular jpg in 3D split view for viewing.
+ *
+ * This class is part of the Rajawali Library, with small additions to it as per our need.
+ */
 package com.samskrut.omnipresence;
 
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
-
 import org.rajawali3d.cardboard.RajawaliCardboardRenderer;
 import org.rajawali3d.materials.Material;
 import org.rajawali3d.materials.textures.ATexture;
 import org.rajawali3d.materials.textures.Texture;
 import org.rajawali3d.math.vector.Vector3;
 import org.rajawali3d.primitives.Sphere;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
@@ -23,6 +25,9 @@ public class MyRenderer extends RajawaliCardboardRenderer {
     public int pos;
     public ContextWrapper contextWrapper;
 
+    /**
+     * This constructor will be called from MyVrView activity with the 3 values.
+     */
     public MyRenderer(ContextWrapper c, int pp, int p) {
         super(c);
         contextWrapper = c;
@@ -39,13 +44,11 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         }catch (FileNotFoundException e){
             Log.e("MyRenderer filenotfound",Login.USERNAME+"_"+projectPos + "_" + pos + ".jpg");
         }
+
         Bitmap bitmap = BitmapFactory.decodeStream(is);
-        //Bitmap bitmap = decodeFile(is);
-        //Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
         Sphere sphere = createPhotoSphereWithTexture(new Texture("photo", bitmap));
 
         getCurrentScene().addChild(sphere);
-
         getCurrentCamera().setPosition(Vector3.ZERO);
         getCurrentCamera().setFieldOfView(75);
     }
@@ -66,20 +69,5 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         sphere.setMaterial(material);
 
         return sphere;
-    }
-
-    // Decodes image and scales it to reduce memory consumption
-    private Bitmap decodeFile(InputStream is) {
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(is, null, o);
-        final int REQUIRED_SIZE=1024;
-        int scale = 1;
-        while(o.outWidth / scale / 2 >= REQUIRED_SIZE && o.outHeight / scale / 2 >= REQUIRED_SIZE) {
-            scale *= 2;
-        }
-        BitmapFactory.Options o2 = new BitmapFactory.Options();
-        o2.inSampleSize = scale;
-        return BitmapFactory.decodeStream(is, null, o2);
     }
 }
